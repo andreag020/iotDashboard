@@ -13,10 +13,14 @@
         {% endfor %}
     </ul>
     <h1>Base de Datos</h1>
-<ul>
+    <ul>
         {% for device in devices_db %}
         <li>{{ device }}</li>
         {% endfor %}
     </ul>
+    <br>
+    <form action="{{ url_for('logout') }}" method="POST">
+    <input type="submit" value="Logout">
+</form>
 </body>
 </html>

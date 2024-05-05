@@ -1,79 +1,73 @@
 import logging
-from flask import Flask, render_template
-from tuya_connector import TuyaOpenAPI, TUYA_LOGGER
+import os
+from flask import Flask, render_template, request, redirect, url_for
+from dotenv import load_dotenv
+from model.app_model import get_tuya_devices, get_firestore_devices
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
-
-# Fetch the service account key JSON file contents
-cred = credentials.Certificate('firebase/iot-dashboard-firebase.json')
-
-# Initialize the app with a service account, granting admin privileges
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://console.firebase.google.com/project/iot-dashboard-737c8/firestore'
-})
+load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY")
 
-ACCESS_ID = "3ujca7y7apppqpcjjmdt"
-ACCESS_KEY = "e719ad0396c74b64bad8510c8baa491c"
-API_ENDPOINT = "https://openapi.tuyaus.com"
-DEVICE_ID = "vdevo170000581142241"
-
-
-def get_tuya_devices():
-    TUYA_LOGGER.setLevel(logging.DEBUG)
-    openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
-    openapi.connect()
-
-    # Get the info of one device with ID
-    # response = openapi.get("/v1.0/iot-03/devices/{}".format(DEVICE_ID))
-
-    # Get all devices
-    response = openapi.get("/v2.0/cloud/thing/device?page_size=3")
-
-    # Lista para almacenar los IDs de los dispositivos
-    device_ids = []
-
-    # Extraer e almacenar el ID del dispositivo para cada dispositivo en la lista
-    for device in response.get("result", []):
-        device_id = device.get("id")
-        device_ids.append(device_id)
-
-    return device_ids
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 
-def get_firestore_devices():
-    db = firestore.client()
-
-    try:
-        # Get reference to the "Device" collection
-        devices_ref = db.collection('Device')
-
-        # Fetch all documents in the collection
-        devices = devices_ref.stream()
-
-        # Lista para almacenar los IDs de los dispositivos
-        device_ids = []
-
-        # Recorrer cada documento y obtener su ID
-        for device in devices:
-            device_id = device.id
-            device_ids.append(device_id)
-
-        return device_ids
-    except Exception as e:
-        print("Error al obtener los dispositivos de Firestore:", e)
-        return []
+class User(UserMixin):
+    pass
 
 
-@app.route('/')
-def index():
+users = {'foo': {'password': 'bar'}}
+
+
+@login_manager.user_loader
+def user_loader(username):
+    if username not in users:
+        return
+
+    user = User()
+    user.id = username
+    return user
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        return render_template('login.html')
+
+    username = request.form['username']
+    if username in users and request.form['password'] == users[username]['password']:
+        user = User()
+        user.id = username
+        login_user(user)
+        return redirect(url_for('dashboard'))
+
+    return 'Bad login'
+
+
+@app.route('/protected')
+@login_required
+def dashboard():
     devices_tuya = get_tuya_devices()
     devices_db = get_firestore_devices()
     # logging.info("Response: %s", devices_tuya)
     return render_template('index.html', devices_tuya=devices_tuya, devices_db=devices_db)
+    # return 'Logged in as: ' + current_user.id
+
+
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    logout_user()
+    return 'Logged out'
+
+
+@app.route('/')
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    else:
+        return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
