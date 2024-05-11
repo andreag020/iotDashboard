@@ -1,0 +1,17 @@
+<html>
+<head>
+    <title>Add device</title>
+</head>
+<body>
+    <h2>Add device</h2>
+    <form method="POST" action="{{ url_for('add_device') }}">
+        <input type="text" name="device_name" placeholder="Enter device name">
+        <select name="device_type">
+            {% for type in types %}
+                <option value="{{ type['id'] }}">{{ type['name'] }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Add Device</button>
+    </form>
+</body>
+</html>

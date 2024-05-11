@@ -9,18 +9,21 @@
     <h1>Mis dispositivos Tuya</h1>
     <ul>
         {% for device in devices_tuya %}
-        <li>{{ device }}</li>
+        <li>{{ device }}</li>  <!-- Accede al ID del dispositivo -->
         {% endfor %}
     </ul>
     <h1>Base de Datos</h1>
     <ul>
         {% for device in devices_db %}
-        <li>{{ device }}</li>
+        <li>{{ device['id'] }}</li>  <!-- Accede al ID del dispositivo -->
         {% endfor %}
     </ul>
     <br>
     <form action="{{ url_for('logout') }}" method="POST">
     <input type="submit" value="Logout">
+</form>
+<form action="{{ url_for('add_device') }}" method="GET">
+    <button type="submit">Add Device</button>
 </form>
 </body>
 </html>

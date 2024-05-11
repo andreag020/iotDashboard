@@ -9,5 +9,13 @@
   "token_uri": "https://oauth2.googleapis.com/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-o4mip%40iot-dashboard-737c8.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
+  "universe_domain": "googleapis.com",
+  "apiKey": "AIzaSyCN8raKQdX7fWOsSajUXMjNbpyOQcRGzbk",
+  "authDomain": "iot-dashboard-737c8.firebaseapp.com",
+  "projectId": "iot-dashboard-737c8",
+  "storageBucket": "iot-dashboard-737c8.appspot.com",
+  "messagingSenderId": "161978225178",
+  "appId": "1:161978225178:web:9cc5a5f59ec2e19076b7a3",
+  "measurementId": "G-7V27EF2P70",
+  "databaseURL": "https://console.firebase.google.com/project/iot-dashboard-737c8/firestore"
 }

@@ -3,7 +3,10 @@
 import logging
 import firebase_admin
 from tuya_connector import TuyaOpenAPI, TUYA_LOGGER
-from firebase_admin import firestore, credentials
+from firebase_admin import firestore, credentials, auth, exceptions
+from flask_login import LoginManager, UserMixin
+from google.cloud.firestore_v1.base_query import FieldFilter
+from flask_login import UserMixin
 
 # Fetch the service account key JSON file contents
 cred = credentials.Certificate('model/firebase/iot-dashboard-firebase.json')
@@ -17,6 +20,14 @@ ACCESS_ID = "3ujca7y7apppqpcjjmdt"
 ACCESS_KEY = "e719ad0396c74b64bad8510c8baa491c"
 API_ENDPOINT = "https://openapi.tuyaus.com"
 DEVICE_ID = "vdevo170000581142241"
+
+db = firestore.client()
+
+login_manager = LoginManager()
+
+
+class User(UserMixin):
+    pass
 
 
 def get_tuya_devices():
@@ -42,8 +53,6 @@ def get_tuya_devices():
 
 
 def get_firestore_devices():
-    db = firestore.client()
-
     try:
         # Get reference to the "Device" collection
         devices_ref = db.collection('Device')
@@ -63,3 +72,67 @@ def get_firestore_devices():
     except Exception as e:
         print("Error al obtener los dispositivos de Firestore:", e)
         return []
+
+
+def create_user(email, password):
+    user = auth.create_user(email=email, password=password)
+    return user.uid
+
+
+def get_all_users():
+    # Get a reference to the auth service
+    auth = firebase_admin.auth
+
+    # Get the first page of users
+    page = auth.list_users()
+
+    # List to store the emails
+    user_ids = []
+
+    # Iterate over all users in the page
+    for user in page.iterate_all():
+        user_ids.append(user.uid)
+
+    return user_ids
+
+
+'''def add_device_to_user(user_id, device_info):
+    device_info['user_id'] = user_id
+    device_ref = db.collection('Device').document(device_info)
+    device_ref.update({'user_id': user_id})'''
+
+
+def add_device_to_user(user_id, device_name, device_type):
+    device_ref = db.collection('Device').document()
+    device_ref.set({'name': device_name, 'type': device_type, 'user_id': user_id})
+
+
+'''def get_devices_for_user(user_id):
+    devices_ref = db.collection('Device')
+    devices = devices_ref.where(filter=FieldFilter('user_id', '==', user_id)).stream()
+    device_list = [device.to_dict() for device in devices]
+    return device_list'''
+
+
+def get_devices_for_user(user_id):
+    devices_ref = db.collection('Device')
+    devices = devices_ref.where(filter=FieldFilter('user_id', '==', user_id)).stream()
+    device_list = [{'id': device.id, **device.to_dict()} for device in devices]
+    return device_list
+
+
+def get_all_types():
+    types_ref = db.collection('Type')
+    types = types_ref.stream()
+    type_list = [{'id': type_.id, 'name': type_.to_dict()['name']} for type_ in types]
+    return type_list
+
+
+@login_manager.user_loader
+def user_loader(user_id):
+    user = auth.get_user(user_id)
+    if user:
+        user_obj = User()
+        user_obj.id = user.uid
+        return user_obj
+    return None

@@ -1,16 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Pyrebase-Flask-Login</title>
 </head>
 <body>
-    <h1>Login</h1>
-    <form method='POST'>
-        Username: <input type='text' name='username'><br>
-        Password: <input type='password' name='password'><br>
-        <input type='submit' name='submit'><br>
-    </form>
+<div class="wrapper fadeInDown">
+    <div id="formContent">
+        <!-- Tabs Titles
+        <h2 class="active"> Sign In </h2>
+        <a href="http://127.0.0.1:5000/signup"><h2 class="inactive underlineHover">Sign Up </h2></a>
+        -->
+
+        <!-- Login Form -->
+        <form action="{{ url_for('login') }}" method="POST">
+            <input type="email" id="login" class="fadeIn second" name="email" placeholder="email">
+            <input type="password" id="password" class="fadeIn third" name="password" placeholder="password">
+            <input type="submit" class="fadeIn fourth" value="Log In">
+        </form>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class=flashes>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
 </body>
 </html>
