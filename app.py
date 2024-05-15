@@ -11,6 +11,7 @@ import json
 from flask import Flask, flash, redirect, render_template, request, session, abort, url_for
 from flask import jsonify
 import pyrebase
+from flask_cors import CORS
 
 load_dotenv()
 
@@ -18,6 +19,8 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 login_manager = LoginManager()
 login_manager.init_app(app)
+CORS(app)
+CORS(app, origins=["http://localhost:5000"])
 
 
 class User(UserMixin):
@@ -122,6 +125,14 @@ def add_device():
     else:
         types = get_all_types()
         return render_template('add_device.html', types=types)
+
+
+@app.route('/get_updated_devices')
+@login_required
+def get_updated_devices():
+    devices_db = get_devices_for_user(current_user.id)
+    return jsonify(devices_db=devices_db)
+    # return jsonify(devices_db=[{'id': device['id']} for device in devices_db])
 
 
 '''def initialize_app():

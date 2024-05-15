@@ -2,18 +2,22 @@
 
 import logging
 import firebase_admin
+import os
+import  requests
 from tuya_connector import TuyaOpenAPI, TUYA_LOGGER
 from firebase_admin import firestore, credentials, auth, exceptions
-from flask_login import LoginManager, UserMixin
+from flask_login import LoginManager, UserMixin, current_user
 from google.cloud.firestore_v1.base_query import FieldFilter
 from flask_login import UserMixin
 
 # Fetch the service account key JSON file contents
 cred = credentials.Certificate('model/firebase/iot-dashboard-firebase.json')
 
+database_url = os.getenv("DATABASE_URL")
+
 # Initialize the app with a service account, granting admin privileges
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://console.firebase.google.com/project/iot-dashboard-737c8/firestore'
+    'databaseURL': database_url
 })
 
 ACCESS_ID = "3ujca7y7apppqpcjjmdt"
@@ -30,7 +34,7 @@ class User(UserMixin):
     pass
 
 
-def get_tuya_devices():
+'''def get_tuya_devices():
     TUYA_LOGGER.setLevel(logging.DEBUG)
     openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
     openapi.connect()
@@ -49,7 +53,7 @@ def get_tuya_devices():
         device_id = device.get("id")
         device_ids.append(device_id)
 
-    return device_ids
+    return device_ids'''
 
 
 def get_firestore_devices():
@@ -102,9 +106,16 @@ def get_all_users():
     device_ref.update({'user_id': user_id})'''
 
 
-def add_device_to_user(user_id, device_name, device_type):
+'''def add_device_to_user(user_id, device_name, device_type):
     device_ref = db.collection('Device').document()
     device_ref.set({'name': device_name, 'type': device_type, 'user_id': user_id})
+
+
+def get_devices_for_user(user_id):
+    devices_ref = db.collection('Device')
+    devices = devices_ref.where(filter=FieldFilter('user_id', '==', user_id)).stream()
+    device_list = [{'id': device.id, **device.to_dict()} for device in devices]
+    return device_list'''
 
 
 '''def get_devices_for_user(user_id):
@@ -112,13 +123,6 @@ def add_device_to_user(user_id, device_name, device_type):
     devices = devices_ref.where(filter=FieldFilter('user_id', '==', user_id)).stream()
     device_list = [device.to_dict() for device in devices]
     return device_list'''
-
-
-def get_devices_for_user(user_id):
-    devices_ref = db.collection('Device')
-    devices = devices_ref.where(filter=FieldFilter('user_id', '==', user_id)).stream()
-    device_list = [{'id': device.id, **device.to_dict()} for device in devices]
-    return device_list
 
 
 def get_all_types():
@@ -136,3 +140,76 @@ def user_loader(user_id):
         user_obj.id = user.uid
         return user_obj
     return None
+
+
+def add_device_to_firestore(device_id, device_info):
+    device_ref = db.collection('Device').document(device_id)
+    device_ref.set(device_info)
+
+
+'''def get_tuya_devices():
+    TUYA_LOGGER.setLevel(logging.DEBUG)
+    openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
+    openapi.connect()
+
+    # Get all devices
+    response = openapi.get("/v2.0/cloud/thing/device?page_size=3")
+
+    # Lista para almacenar los IDs de los dispositivos
+    device_ids = []
+
+    # Extraer e almacenar el ID del dispositivo para cada dispositivo en la lista
+    for device in response.get("result", []):
+        device_id = device.get("id")
+        device_info = device  # Aquí pasamos todo el objeto device a la función add_device_to_firestore()
+        device_info[
+            'user_id'] = current_user.id  # Aquí asumimos que current_user es una variable global que contiene el usuario actual
+        add_device_to_firestore(device_id, device_info)
+        device_ids.append(device_id)
+
+    return device_ids'''
+
+
+def get_tuya_devices():
+    TUYA_LOGGER.setLevel(logging.DEBUG)
+    openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
+    openapi.connect()
+
+    # Get all devices
+    response = openapi.get("/v2.0/cloud/thing/device?page_size=3")
+
+    # Lista para almacenar los IDs de los dispositivos
+    device_ids = []
+
+    # Extraer e almacenar el ID del dispositivo para cada dispositivo en la lista
+    for device in response.get("result", []):
+        device_id = device.get("id")
+        device_info = device
+        device_info['user_id'] = current_user.id  # Aquí asumimos que current_user es una variable global que contiene el usuario actual
+
+        # Realizar la solicitud GET a la URL del dispositivo
+        device_status_response = openapi.get("/v1.0/iot-03/devices/{}/status".format(device_id))
+
+        # Almacenar la respuesta de la solicitud en Firebase
+        if device_status_response.get('success', False):
+            device_status = device_status_response.get('result', {})
+            device_info['status'] = device_status  # Aquí asumimos que el estado del dispositivo se encuentra en 'result'
+        else:
+            device_info['status'] = {}  # Si la solicitud no es exitosa, asumimos que el dispositivo no tiene estado
+
+        add_device_to_firestore(device_id, device_info)
+        device_ids.append(device_id)
+
+    return device_ids
+
+
+def add_device_to_user(user_id, device_name, device_type):
+    device_ref = db.collection('Device').document()
+    device_ref.set({'name': device_name, 'type': device_type, 'user_id': user_id, 'is_active': False})
+
+
+def get_devices_for_user(user_id):
+    devices_ref = db.collection('Device')
+    devices = devices_ref.where(filter=FieldFilter('user_id', '==', user_id)).stream()
+    device_list = [{'id': device.id, **device.to_dict()} for device in devices]
+    return device_list
