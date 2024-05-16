@@ -6,51 +6,74 @@
     <title>Tuya Smart Web App</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script>
-$(document).ready(function() {
-    function updateDeviceList() {
-        $.get("/get_updated_devices", function(data) {
-            var deviceList = $("#device-list");
-            deviceList.empty();  // Vacía la lista de dispositivos
-            data.devices_db.forEach(function(device) {
-                var checked = device.status[0].value ? 'checked' : '';
-                deviceList.append("<li><input type='checkbox' class='device-toggle' data-device-id='" + device.id + "' " + checked + ">" + device.name + " (" + device.type + ")</li>");  // Agrega cada dispositivo a la lista
+        $(document).ready(function () {
+            function updateDeviceList() {
+                $.get("/get_updated_devices", function (data) {
+                    var deviceList = $("#device-list");
+                    deviceList.empty();  // Vacía la lista de dispositivos
+                    data.devices_db.forEach(function (device) {
+                        var checked = device.status[0].value ? 'checked' : '';
+                        deviceList.append("<li><input type='checkbox' class='device-toggle' data-device-id='" + device.id + "' " + checked + ">" + device.name + " (" + device.type + ")</li>");  // Agrega cada dispositivo a la lista
+                    });
+                });
+            }
+
+            $(document).ready(function () {
+                function updateDeviceList() {
+                    $.get("/get_updated_devices", function (data) {
+                        var deviceList = $("#device-list");
+                        deviceList.empty();  // Vacía la lista de dispositivos
+                        data.devices_db.forEach(function (device) {
+                            var checked = device.status[0].value ? 'checked' : '';
+                            deviceList.append("<li><input type='checkbox' class='device-toggle' data-device-id='" + device.id + "' " + checked + ">" + device.name + " (" + device.type + ")</li>");  // Agrega cada dispositivo a la lista
+                        });
+                    });
+                }
+
+                $(document).on('change', '.device-toggle', function () {
+                    var deviceId = $(this).data('device-id');
+                    var isActive = $(this).is(':checked');
+
+                    $.post("/update_device_status", {device_id: deviceId, new_status: isActive}, function (data) {
+                        if (!data.success) {
+                            alert('Error al actualizar el estado del dispositivo');
+                            // Si hay un error, vuelve a cargar la lista de dispositivos para reflejar el estado actual
+                            updateDeviceList();
+                        }
+                    });
+                });
+
+                updateDeviceList();  // Actualiza la lista de dispositivos al cargar la página
+                setInterval(updateDeviceList, 5000);  // Actualiza la lista de dispositivos cada 5 segundos
             });
+
+            updateDeviceList();  // Actualiza la lista de dispositivos al cargar la página
+            setInterval(updateDeviceList, 5000);  // Actualiza la lista de dispositivos cada 5 segundos
         });
-    }
-
-    $(document).on('change', '.device-toggle', function() {
-        var deviceId = $(this).data('device-id');
-        var isActive = $(this).is(':checked');
-        // Aquí debes agregar el código para actualizar el campo 'is_active' en la base de datos Firestore
-    });
-
-    updateDeviceList();  // Actualiza la lista de dispositivos al cargar la página
-    setInterval(updateDeviceList, 5000);  // Actualiza la lista de dispositivos cada 5 segundos
-});
-</script>
+    </script>
 </head>
 <body>
-    <h1>Mis dispositivos Tuya</h1>
-    <ul id="tuya-device-list">
-        {% for device in devices_tuya %}
+<h1>Mis dispositivos Tuya</h1>
+<ul id="tuya-device-list">
+    {% for device in devices_tuya %}
         <li>{{ device }}</li>  <!-- Accede al ID del dispositivo -->
-        {% endfor %}
-    </ul>
-    <h1>Base de Datos</h1>
-    <ul id="device-list">
-        {% for device in devices_db %}
+    {% endfor %}
+</ul>
+<h1>Base de Datos</h1>
+<ul id="device-list">
+    {% for device in devices_db %}
         <li>
             <input type="checkbox" name="device" value="{{ device.name }}"> <!-- Toggle button -->
             {{ device.name }} ({{ device.type }})
         </li>
-        {% endfor %}
-    </ul>
-    <br>
-    <form action="{{ url_for('logout') }}" method="POST">
-        <input type="submit" value="Logout">
-    </form>
-    <form action="{{ url_for('add_device') }}" method="GET">
-        <button type="submit">Add Device</button>
-    </form>
+    {% endfor %}
+</ul>
+<br>
+<form action="{{ url_for('logout') }}" method="POST">
+    <input type="submit" value="Logout">
+</form>
+<form action="{{ url_for('add_device') }}" method="GET">
+    <button type="submit">Add Device</button>
+</form>
 </body>
 </html>

@@ -144,7 +144,7 @@ def user_loader(user_id):
 
 def add_device_to_firestore(device_id, device_info):
     device_ref = db.collection('Device').document(device_id)
-    device_ref.set(device_info)
+    device_ref.set(device_info, merge=True)
 
 
 '''def get_tuya_devices():
@@ -185,7 +185,6 @@ def get_tuya_devices():
     for device in response.get("result", []):
         device_id = device.get("id")
         device_info = device
-        device_info['user_id'] = current_user.id  # Aquí asumimos que current_user es una variable global que contiene el usuario actual
 
         # Realizar la solicitud GET a la URL del dispositivo
         device_status_response = openapi.get("/v1.0/iot-03/devices/{}/status".format(device_id))
@@ -196,6 +195,17 @@ def get_tuya_devices():
             device_info['status'] = device_status  # Aquí asumimos que el estado del dispositivo se encuentra en 'result'
         else:
             device_info['status'] = {}  # Si la solicitud no es exitosa, asumimos que el dispositivo no tiene estado
+
+        # Verificar si el dispositivo ya existe en Firebase
+        device_ref = db.collection('Device').document(device_id)
+        device_doc = device_ref.get()
+
+        if device_doc.exists:
+            # Si el dispositivo ya existe, no actualizamos el user_id
+            device_info.pop('user_id', None)
+        else:
+            # Si el dispositivo no existe, asignamos el user_id
+            device_info['user_id'] = current_user.id  # Aquí asumimos que current_user es una variable global que contiene el usuario actual
 
         add_device_to_firestore(device_id, device_info)
         device_ids.append(device_id)

@@ -12,6 +12,7 @@ from flask import Flask, flash, redirect, render_template, request, session, abo
 from flask import jsonify
 import pyrebase
 from flask_cors import CORS
+from tuya_connector import TuyaOpenAPI, TUYA_LOGGER
 
 load_dotenv()
 
@@ -31,6 +32,11 @@ pb = pyrebase.initialize_app(json.load(open('model/firebase/iot-dashboard-fireba
 
 users = get_all_users()
 
+
+ACCESS_ID = "3ujca7y7apppqpcjjmdt"
+ACCESS_KEY = "e719ad0396c74b64bad8510c8baa491c"
+API_ENDPOINT = "https://openapi.tuyaus.com"
+DEVICE_ID = "vdevo170000581142241"
 
 @login_manager.user_loader
 def user_loader(user_id):
@@ -133,6 +139,29 @@ def get_updated_devices():
     devices_db = get_devices_for_user(current_user.id)
     return jsonify(devices_db=devices_db)
     # return jsonify(devices_db=[{'id': device['id']} for device in devices_db])
+
+
+@app.route('/update_device_status', methods=['POST'])
+@login_required
+def update_device_status():
+    from model.app_model import db  # Import the Firestore client
+
+    device_id = request.form['device_id']
+    new_status = request.form['new_status'] == 'true'  # Convert the string to a boolean
+
+    TUYA_LOGGER.setLevel(logging.DEBUG)
+    openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
+    openapi.connect()
+
+    commands = {"commands":[{"code":"switch_1","value":new_status}]}
+    response = openapi.post(f'/v1.0/iot-03/devices/{device_id}/commands', commands)
+
+    # If the POST request was successful, update the device status in Firestore
+    if response.get('success', False):
+        device_ref = db.collection('Device').document(device_id)
+        device_ref.update({'status': [{'code': 'switch_1', 'value': new_status}]})
+
+    return jsonify(success=response.get('success', False))
 
 
 '''def initialize_app():
