@@ -138,30 +138,29 @@ def add_device():
 def get_updated_devices():
     devices_db = get_devices_for_user(current_user.id)
     return jsonify(devices_db=devices_db)
-    # return jsonify(devices_db=[{'id': device['id']} for device in devices_db])
 
 
 @app.route('/update_device_status', methods=['POST'])
 @login_required
 def update_device_status():
-    from model.app_model import db  # Import the Firestore client
+    from model.app_model import db, update_device_status_tuya  # Import the Firestore client and the new function
 
     device_id = request.form['device_id']
     new_status = request.form['new_status'] == 'true'  # Convert the string to a boolean
 
-    TUYA_LOGGER.setLevel(logging.DEBUG)
-    openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
-    openapi.connect()
-
-    commands = {"commands":[{"code":"switch_1","value":new_status}]}
-    response = openapi.post(f'/v1.0/iot-03/devices/{device_id}/commands', commands)
-
-    # If the POST request was successful, update the device status in Firestore
-    if response.get('success', False):
-        device_ref = db.collection('Device').document(device_id)
-        device_ref.update({'status': [{'code': 'switch_1', 'value': new_status}]})
-
-    return jsonify(success=response.get('success', False))
+    try:
+        # Update the device status in Tuya
+        response = update_device_status_tuya(device_id, new_status)
+        if response:
+            # If the POST request was successful, update the device status in Firestore
+            device_ref = db.collection('Device').document(device_id)
+            device_ref.update({'status': [{'code': 'switch_1', 'value': new_status}]})
+            return jsonify(success=True)
+        else:
+            return jsonify(success=False, error="Failed to update status in Tuya")
+    except Exception as e:
+        logging.error(f"Error updating device status: {e}")
+        return jsonify(success=False, error=str(e))
 
 
 '''def initialize_app():

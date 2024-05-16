@@ -223,3 +223,18 @@ def get_devices_for_user(user_id):
     devices = devices_ref.where(filter=FieldFilter('user_id', '==', user_id)).stream()
     device_list = [{'id': device.id, **device.to_dict()} for device in devices]
     return device_list
+
+
+def update_device_status_tuya(device_id, new_status):
+    TUYA_LOGGER.setLevel(logging.DEBUG)
+    openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
+    openapi.connect()
+
+    commands = {"commands":[{"code":"switch_1","value":new_status}]}
+    response = openapi.post(f'/v1.0/iot-03/devices/{device_id}/commands', commands)
+
+    if response.get('success', False):
+        return True
+    else:
+        logging.error(f"Failed to update device {device_id} status: {response}")
+        return False
