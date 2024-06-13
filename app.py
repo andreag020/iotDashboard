@@ -13,6 +13,7 @@ from flask import jsonify
 import pyrebase
 from flask_cors import CORS
 from tuya_connector import TuyaOpenAPI, TUYA_LOGGER
+from model.app_model import get_active_time_by_hour
 
 load_dotenv()
 
@@ -36,7 +37,7 @@ users = get_all_users()
 ACCESS_ID = "3ujca7y7apppqpcjjmdt"
 ACCESS_KEY = "e719ad0396c74b64bad8510c8baa491c"
 API_ENDPOINT = "https://openapi.tuyaus.com"
-DEVICE_ID = "vdevo170000581142241"
+#DEVICE_ID = "vdevo170000581142241"
 
 @login_manager.user_loader
 def user_loader(user_id):
@@ -170,6 +171,32 @@ def update_device_status():
 
     for device in devices:
         print(f"Device ID: {device.id}, Device Info: {device.to_dict()}")'''
+
+
+@app.route('/get_data', methods=['GET'])
+def get_data():
+    # Aquí debes obtener los datos de tu base de datos
+    data = {
+        'labels': ['January', 'February', 'March', 'April', 'May', 'June'],
+        'data': [65, 59, 80, 81, 56, 55]
+    }
+    return jsonify(data)
+
+
+@app.route('/get_device_data', methods=['GET'])
+@login_required
+def get_device_data():
+    devices = get_devices_for_user(current_user.id)
+    device_data = [{'id': device['id'], 'labels': ['January', 'February', 'March', 'April', 'May', 'June'], 'data': [65, 59, 80, 81, 56, 55]} for device in devices]
+    return jsonify(device_data=device_data)
+
+
+@app.route('/get_active_time_by_hour', methods=['GET'])
+@login_required
+def active_time_by_hour():
+    data = get_active_time_by_hour(current_user.id)
+    return jsonify(data)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

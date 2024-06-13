@@ -9,6 +9,7 @@ from firebase_admin import firestore, credentials, auth, exceptions
 from flask_login import LoginManager, UserMixin, current_user
 from google.cloud.firestore_v1.base_query import FieldFilter
 from flask_login import UserMixin
+import datetime
 
 # Fetch the service account key JSON file contents
 cred = credentials.Certificate('model/firebase/iot-dashboard-firebase.json')
@@ -238,3 +239,33 @@ def update_device_status_tuya(device_id, new_status):
     else:
         logging.error(f"Failed to update device {device_id} status: {response}")
         return False
+
+
+def get_active_time_by_hour(user_id):
+    devices_ref = db.collection('Device').where('user_id', '==', user_id)
+    devices = devices_ref.stream()
+
+    active_time_by_hour = {hour: 0 for hour in range(24)}
+    device_names = {hour: [] for hour in range(24)}
+
+    for device in devices:
+        device_data = device.to_dict()
+        if 'activeTime' in device_data and 'createTime' in device_data:
+            active_time = device_data['activeTime']
+            create_time = device_data['createTime']
+            device_name = device_data.get('name', 'Unknown Device')
+
+            create_time_datetime = datetime.datetime.fromtimestamp(create_time)
+            hour = create_time_datetime.hour
+
+            active_time_hours = active_time / 3600  # Convertir a horas
+
+            active_time_by_hour[hour] += active_time_hours
+            if device_name not in device_names[hour]:
+                device_names[hour].append(device_name)
+
+    return {
+        'labels': [f'{hour}:00' for hour in range(24)],  # Etiquetas para cada hora
+        'data': list(active_time_by_hour.values()),
+        'device_names': {hour: ', '.join(device_names[hour]) for hour in range(24)}
+    }
