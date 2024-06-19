@@ -239,6 +239,8 @@ def get_devices_for_user(user_id):
 #     else:
 #         logging.error(f"Failed to update device {device_id} status: {response}")
 #         return False
+# ... (rest of the code)
+
 def update_device_status_tuya(device_id, new_status):
     TUYA_LOGGER.setLevel(logging.DEBUG)
     openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)

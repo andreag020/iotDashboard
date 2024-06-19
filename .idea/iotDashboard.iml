@@ -13,6 +13,7 @@
     <orderEntry type="library" name="firebase-auth" level="application" />
     <orderEntry type="library" name="jquery" level="application" />
     <orderEntry type="library" name="chart.js" level="application" />
+    <orderEntry type="library" name="socket.io" level="application" />
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Jinja2" />

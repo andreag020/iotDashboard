@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tuya Smart Web App</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/static/main.js"></script>
     <style>
         body {
@@ -19,8 +18,7 @@
 <ul id="device-list">
     {% for device in devices_db %}
         <li>
-            <input type="checkbox" class='device-toggle' data-device-id="{{ device.id }}"
-                   {% if device.status[0].value %}checked{% endif %}>
+            <input type="checkbox" class="device-toggle" data-device-id="{{ device.id }}" {% if device.status[0].value %}checked{% endif %}>
             {{ device.name }} ({{ device.id }})
         </li>
     {% endfor %}
@@ -32,8 +30,5 @@
 <form action="{{ url_for('add_device') }}" method="GET">
     <button type="submit">Add Device</button>
 </form>
-<canvas id="usageChart"></canvas>
-<h1>Active Time by Hour</h1>
-<canvas id="activeTimeChart"></canvas>
 </body>
 </html>
