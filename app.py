@@ -2,7 +2,7 @@ import logging
 import os
 
 from firebase_admin import auth, exceptions
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from dotenv import load_dotenv
 from model.app_model import get_tuya_devices, get_firestore_devices, create_user, add_device_to_user, \
     get_devices_for_user, get_all_users, get_all_types
@@ -17,6 +17,7 @@ from model.app_model import get_active_time_by_hour
 
 load_dotenv()
 
+#app = Flask(__name__, static_folder='frontend/build/static', template_folder='frontend/build')
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 login_manager = LoginManager()
@@ -103,7 +104,20 @@ def register():
     else:
         return render_template('registration.html')
 
+@app.route('/assets/<path:path>')
+def serve_assets(path):
+    return send_from_directory(app.static_folder + '/assets', path)
 
+@app.route('/static/<path:path>')
+def serve_static_files(path):
+    return send_from_directory(app.static_folder, path)
+
+# @app.route('/')
+# @app.route('/<path:path>')
+# def serve_react_app(path=None):
+#     if path and (path.startswith('static') or path.startswith('assets') or '.' in path):
+#         return send_from_directory(app.static_folder, path)
+#     return send_from_directory(app.template_folder, 'index.html')
 @app.route('/')
 def index():
     if not current_user.is_authenticated:

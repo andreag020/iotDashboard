@@ -226,18 +226,50 @@ def get_devices_for_user(user_id):
     return device_list
 
 
+# def update_device_status_tuya(device_id, new_status):
+#     TUYA_LOGGER.setLevel(logging.DEBUG)
+#     openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
+#     openapi.connect()
+#
+#     commands = {"commands":[{"code":"switch_led","value":new_status}]}
+#     response = openapi.post(f'/v1.0/iot-03/devices/{device_id}/commands', commands)
+#
+#     if response.get('success', False):
+#         return True
+#     else:
+#         logging.error(f"Failed to update device {device_id} status: {response}")
+#         return False
 def update_device_status_tuya(device_id, new_status):
     TUYA_LOGGER.setLevel(logging.DEBUG)
     openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
     openapi.connect()
 
-    commands = {"commands":[{"code":"switch_1","value":new_status}]}
-    response = openapi.post(f'/v1.0/iot-03/devices/{device_id}/commands', commands)
+    # Obtener el estado del dispositivo
+    device_status_response = openapi.get(f"/v1.0/iot-03/devices/{device_id}/status")
 
-    if response.get('success', False):
-        return True
+    if device_status_response.get('success', False):
+        device_status = device_status_response.get('result', {})
+
+        # Verificar cuál campo está presente
+        if any(d['code'] == 'switch_1' for d in device_status):
+            command_code = 'switch_1'
+        elif any(d['code'] == 'switch_led' for d in device_status):
+            command_code = 'switch_led'
+        else:
+            logging.error(f"Neither switch_1 nor switch_led found in device {device_id} status")
+            return False
+
+        # Enviar la solicitud POST con el campo correcto
+        commands = {"commands":[{"code": command_code, "value":new_status}]}
+        response = openapi.post(f'/v1.0/iot-03/devices/{device_id}/commands', commands)
+
+        if response.get('success', False):
+            return True
+        else:
+            logging.error(f"Failed to update device {device_id} status: {response}")
+            return False
     else:
-        logging.error(f"Failed to update device {device_id} status: {response}")
+        logging.error(f"Failed to get device {device_id} status: {device_status_response}")
         return False
 
 
