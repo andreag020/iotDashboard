@@ -21,11 +21,6 @@ firebase_admin.initialize_app(cred, {
     'databaseURL': database_url
 })
 
-ACCESS_ID = "3ujca7y7apppqpcjjmdt"
-ACCESS_KEY = "e719ad0396c74b64bad8510c8baa491c"
-API_ENDPOINT = "https://openapi.tuyaus.com"
-DEVICE_ID = "vdevo170000581142241"
-
 db = firestore.client()
 
 login_manager = LoginManager()
@@ -173,7 +168,7 @@ def add_device_to_firestore(device_id, device_info):
 
 def get_tuya_devices():
     TUYA_LOGGER.setLevel(logging.DEBUG)
-    openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
+    openapi = TuyaOpenAPI(os.getenv("API_ENDPOINT"), os.getenv("ACCESS_ID"), os.getenv("ACCESS_KEY"))
     openapi.connect()
 
     # Get all devices
@@ -243,7 +238,7 @@ def get_devices_for_user(user_id):
 
 def update_device_status_tuya(device_id, new_status):
     TUYA_LOGGER.setLevel(logging.DEBUG)
-    openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
+    openapi = TuyaOpenAPI(os.getenv("API_ENDPOINT"), os.getenv("ACCESS_ID"), os.getenv("ACCESS_KEY"))
     openapi.connect()
 
     device_status_response = openapi.get(f"/v1.0/iot-03/devices/{device_id}/status")
