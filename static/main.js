@@ -6,7 +6,7 @@ $(document).ready(function () {
         deviceList.empty();
         data.devices_db.forEach(function (device) {
             var checked = device.status[0].value ? 'checked' : '';
-            var listItem = $("<li><input type='checkbox' class='device-toggle' data-device-id='" + device.id + "' " + checked + ">" + device.name + " (" + device.id + ")</li>");
+            var listItem = $("<li><input type='checkbox' class='device-toggle' data-device-id='" + device.id + "' " + checked + ">" + device.customName + " (" + device.id + ")</li>");
             deviceList.append(listItem);
         });
     });

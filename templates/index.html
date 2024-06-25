@@ -20,7 +20,7 @@
     {% for device in devices_db %}
         <li>
             <input type="checkbox" class="device-toggle" data-device-id="{{ device.id }}" {% if device.status[0].value %}checked{% endif %}>
-            {{ device.name }} ({{ device.id }})
+            {{ device.customName }} ({{ device.id }})
         </li>
     {% endfor %}
 </ul>

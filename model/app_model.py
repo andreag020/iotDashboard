@@ -192,19 +192,23 @@ def get_tuya_devices():
         else:
             device_info['status'] = {}  # Si la solicitud no es exitosa, asumimos que el dispositivo no tiene estado
 
-        # Verificar si el dispositivo ya existe en Firebase
-        device_ref = db.collection('Device').document(device_id)
-        device_doc = device_ref.get()
+            # Verificar si el dispositivo ya existe en Firebase
+            device_ref = db.collection('Device').document(device_id)
+            device_doc = device_ref.get()
 
-        if device_doc.exists:
-            # Si el dispositivo ya existe, no actualizamos el user_id
-            device_info.pop('user_id', None)
-        else:
-            # Si el dispositivo no existe, asignamos el user_id
-            device_info['user_id'] = current_user.id  # Aquí asumimos que current_user es una variable global que contiene el usuario actual
+            if device_doc.exists:
+                # Si el dispositivo ya existe, actualizamos solo los campos que obtenemos de la API de Tuya
+                device_ref.update(device_info)
+            else:
+                # Si el dispositivo no existe, lo agregamos a la base de datos con el user_id del usuario actual
+                device_info['user_id'] = current_user.id
+                device_info['customName'] = device_info.get('customName', device_info.get(
+                    'name'))  # Aquí agregamos el campo customName
+                device_ref.set(device_info)
 
-        add_device_to_firestore(device_id, device_info)
-        device_ids.append(device_id)
+            device_ids.append(device_id)
+
+        return device_ids
 
     return device_ids
 
