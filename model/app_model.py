@@ -246,23 +246,17 @@ def update_device_status_tuya(device_id, new_status):
     openapi = TuyaOpenAPI(API_ENDPOINT, ACCESS_ID, ACCESS_KEY)
     openapi.connect()
 
-    # Obtener el estado del dispositivo
     device_status_response = openapi.get(f"/v1.0/iot-03/devices/{device_id}/status")
 
     if device_status_response.get('success', False):
         device_status = device_status_response.get('result', {})
+        command_code = next((d['code'] for d in device_status if d['code'] in ['switch_1', 'switch_led']), None)
 
-        # Verificar cuál campo está presente
-        if any(d['code'] == 'switch_1' for d in device_status):
-            command_code = 'switch_1'
-        elif any(d['code'] == 'switch_led' for d in device_status):
-            command_code = 'switch_led'
-        else:
+        if not command_code:
             logging.error(f"Neither switch_1 nor switch_led found in device {device_id} status")
             return False
 
-        # Enviar la solicitud POST con el campo correcto
-        commands = {"commands":[{"code": command_code, "value":new_status}]}
+        commands = {"commands": [{"code": command_code, "value": new_status}]}
         response = openapi.post(f'/v1.0/iot-03/devices/{device_id}/commands', commands)
 
         if response.get('success', False):
