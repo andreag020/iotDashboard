@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tuya Smart Web App</title>
+    <!-- Include Socket.IO library for real-time communication -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <!-- Include jQuery library for easier JavaScript manipulation -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Include the main JavaScript file for this app -->
     <script src="/static/main.js"></script>
     <style>
         body {
@@ -17,19 +20,20 @@
 <body>
 <h1>Devices</h1>
 <ul id="device-list">
+    <!-- Loop through each device in the devices_db list and display them -->
     {% for device in devices_db %}
         <li>
-            <input type="checkbox" class="device-toggle" data-device-id="{{ device.id }}" {% if device.status[0].value %}checked{% endif %}>
+            <!-- Checkbox to toggle device status, checked if the device is on -->
+            <input type="checkbox" class="device-toggle" data-device-id="{{ device.id }}"
+                   {% if device.status[0].value %}checked{% endif %}>
             {{ device.customName }} ({{ device.id }})
         </li>
     {% endfor %}
 </ul>
 <br>
+<!-- Form to logout the user -->
 <form action="{{ url_for('logout') }}" method="POST">
     <input type="submit" value="Logout">
-</form>
-<form action="{{ url_for('add_device') }}" method="GET">
-    <button type="submit">Add Device</button>
 </form>
 </body>
 </html>

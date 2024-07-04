@@ -1,8 +1,31 @@
-<!-- registration.html -->
-<form action="/register" method="post">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+</head>
+<body>
+<h1>Register</h1>
+<form action="/register" method="post" id="registration-form">
     <label for="email">Email:</label><br>
-    <input type="email" id="email" name="email"><br>
+    <input type="email" id="email" name="email" autocomplete="email" required><br>
     <label for="password">Password:</label><br>
-    <input type="password" id="password" name="password"><br>
-    <input type="submit" value="Register">
+    <input type="password" id="password" name="password" autocomplete="new-password" required><br>
+    <label for="confirm_password">Confirm Password:</label><br>
+    <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required><br>
+    <div class="error">{{ error }}</div>
+    <button type="submit">Register</button>
 </form>
+<script>
+    document.getElementById('registration-form').addEventListener('submit', function (event) {
+        var password = document.querySelector('input[name="password"]').value;
+        var confirm_password = document.querySelector('input[name="confirm_password"]').value;
+        if (password !== confirm_password) {
+            event.preventDefault();
+            alert('Passwords do not match!');
+        }
+    });
+</script>
+</body>
+</html>

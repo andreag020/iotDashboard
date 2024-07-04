@@ -6,16 +6,14 @@
 <body>
 <div class="wrapper fadeInDown">
     <div id="formContent">
-        <!-- Tabs Titles
-        <h2 class="active"> Sign In </h2>
-        <a href="http://127.0.0.1:5000/signup"><h2 class="inactive underlineHover">Sign Up </h2></a>
-        -->
-
-        <!-- Login Form -->
         <form action="{{ url_for('login') }}" method="POST">
-            <input type="email" id="login" class="fadeIn second" name="email" placeholder="email">
-            <input type="password" id="password" class="fadeIn third" name="password" placeholder="password">
+            <input type="email" id="login" class="fadeIn second" name="email" placeholder="email" autocomplete="email">
+            <input type="password" id="password" class="fadeIn third" name="password" placeholder="password" autocomplete="current-password">
             <input type="submit" class="fadeIn fourth" value="Log In">
+        </form>
+        <!-- Form to navigate to the registration page -->
+        <form action="{{ url_for('register') }}" method="GET">
+            <button type="submit">Register</button>
         </form>
         {% with messages = get_flashed_messages() %}
             {% if messages %}

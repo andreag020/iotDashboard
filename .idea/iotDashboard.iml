@@ -15,6 +15,9 @@
     <orderEntry type="library" name="chart.js" level="application" />
     <orderEntry type="library" name="socket.io" level="application" />
   </component>
+  <component name="PackageRequirementsSettings">
+    <option name="removeUnused" value="true" />
+  </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_CONFIGURATION" value="Jinja2" />
     <option name="TEMPLATE_FOLDERS">

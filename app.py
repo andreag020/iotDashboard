@@ -9,32 +9,45 @@ from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_socketio import SocketIO, emit, join_room
 
-from model.app_model import get_tuya_devices, create_user, add_device_to_user, get_devices_for_user, get_all_users, get_all_types, update_device_status_tuya, db
+from model.app_model import get_tuya_devices, create_user, get_devices_for_user, get_all_users, \
+    update_device_status_tuya, db
 
+# Load environment variables from the .env file
 load_dotenv()
 
+# Initialize the Flask application
 app = Flask(__name__)
+# Configure the secret key for session management
 app.secret_key = os.getenv("SECRET_KEY")
+# Initialize the login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
+# Configure CORS to allow requests from localhost:5000
 CORS(app, origins=["http://localhost:5000"])
+# Initialize SocketIO for real-time communication
 socketio = SocketIO(app)
 
+# Initialize Firebase app with configuration from a JSON file
 pb = pyrebase.initialize_app(json.load(open('model/firebase/iot-dashboard-firebase.json')))
 
+# Get all users from the database
 users = get_all_users()
 
+
+# Define the User class for user handling with Flask-Login
 class User(UserMixin):
     pass
 
+
+# Define the function to load a user by their ID
 @login_manager.user_loader
 def user_loader(user_id):
-    if user_id not in users:
-        return
     user = User()
     user.id = user_id
     return user
 
+
+# Route for handling login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
@@ -48,56 +61,67 @@ def login():
                 user_obj = User()
                 user_obj.id = user['localId']
                 login_user(user_obj)
-                return redirect('/dashboard')
+                return redirect(url_for('dashboard'))
         except Exception as e:
-            flash('Usuario o contraseña incorrectos')
+            flash('Invalid email or password')
             return redirect(url_for('login'))
 
+
+# Route to display the dashboard with devices
 @app.route('/dashboard')
-@login_required
+@login_required  # Require login to access this route
 def dashboard():
     devices_tuya = get_tuya_devices()
     devices_db = get_devices_for_user(current_user.id)
     return render_template('index.html', devices_tuya=devices_tuya, devices_db=devices_db)
 
+
+# Route for handling logout
 @app.route('/logout', methods=['GET', 'POST'])
+@login_required
 def logout():
     logout_user()
-    return render_template('login.html')
+    return redirect(url_for('login'))
 
+
+# Route for registering new users
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        user_id = create_user(email, password)
-        user = User()
-        user.id = user_id
-        login_user(user)
-        return redirect(url_for('dashboard'))
+        confirm_password = request.form['confirm_password']
+
+        # Check if passwords match
+        if password != confirm_password:
+            error = "Passwords do not match"
+            return render_template('registration.html', error=error)
+
+        try:
+            # Create the user
+            user_id = create_user(email, password)
+            user = User()
+            user.id = user_id
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            error = f"An error occurred: {e}"
+            return render_template('registration.html', error=error)
     else:
         return render_template('registration.html')
 
-@app.route('/add_device', methods=['GET', 'POST'])
-@login_required
-def add_device():
-    if request.method == 'POST':
-        device_name = request.form['device_name']
-        device_type = request.form['device_type']
-        add_device_to_user(current_user.id, device_name, device_type)
-        return redirect(url_for('dashboard'))
-    else:
-        types = get_all_types()
-        return render_template('add_device.html', types=types)
 
+# Route to get updated devices for the current user
 @app.route('/get_updated_devices')
-@login_required
+@login_required  # Require login to access this route
 def get_updated_devices():
     devices_db = get_devices_for_user(current_user.id)
     return jsonify(devices_db=devices_db)
 
+
+# Route to update the status of a device
 @app.route('/update_device_status', methods=['POST'])
-@login_required
+@login_required  # Require login to access this route
 def update_device_status():
     device_id = request.form['device_id']
     new_status = request.form['new_status'] == 'true'
@@ -117,6 +141,7 @@ def update_device_status():
         return jsonify(success=False, error=str(e))
 
 
+# Function to handle device updates from Firestore
 def on_device_update(docs, changes, read_time):
     for change in changes:
         if change.type.name == 'MODIFIED':
@@ -125,10 +150,10 @@ def on_device_update(docs, changes, read_time):
             if user_id:
                 current_status = device['status'][0]['value']
                 devices_db = get_devices_for_user(user_id)
-                # Emitir actualización del dashboard
+                # Emit dashboard update
                 socketio.emit('updated_devices', {'devices_db': devices_db}, namespace='/', room=user_id)
 
-                # Verificar si el estado ha cambiado realmente antes de enviar la solicitud POST
+                # Check if the status has actually changed before sending the POST request
                 device_ref = db.collection('Device').document(device['id'])
                 device_doc = device_ref.get()
                 if device_doc.exists:
@@ -136,13 +161,15 @@ def on_device_update(docs, changes, read_time):
                     if stored_status != current_status:
                         update_device_status_tuya(device['id'], current_status)
                     else:
-                        # Si el estado no ha cambiado, igual enviar la solicitud POST para asegurar la sincronización
+                        # If the status hasn't changed, still send the POST request to ensure synchronization
                         update_device_status_tuya(device['id'], current_status)
 
 
-# Register Firestore listener
+# Register Firestore listener for updates in the 'Device' collection
 db.collection('Device').on_snapshot(on_device_update)
 
+
+# Handle new client connections via SocketIO
 @socketio.on('connect')
 def handle_connect():
     if current_user and current_user.is_authenticated:
@@ -152,6 +179,8 @@ def handle_connect():
     else:
         logging.warning("No authenticated user found for handle_connect")
 
+
+# Root route that redirects to log in or dashboard depending on user's authentication status
 @app.route('/')
 def index():
     if not current_user.is_authenticated:
@@ -161,5 +190,7 @@ def index():
     else:
         return redirect(url_for('login'))
 
+
+# Run the Flask application with support for SocketIO
 if __name__ == '__main__':
     socketio.run(app, debug=True)
