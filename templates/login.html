@@ -1,22 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- Title of the webpage -->
     <title>Pyrebase-Flask-Login</title>
 </head>
 <body>
+<!-- Wrapper div for the content with a fade-in effect -->
 <div class="wrapper fadeInDown">
+    <!-- Form content div -->
     <div id="formContent">
+        <!-- Login form -->
         <form action="{{ url_for('login') }}" method="POST">
+            <!-- Email input field -->
             <input type="email" id="login" class="fadeIn second" name="email" placeholder="email" autocomplete="email">
-            <input type="password" id="password" class="fadeIn third" name="password" placeholder="password" autocomplete="current-password">
+            <!-- Password input field -->
+            <input type="password" id="password" class="fadeIn third" name="password" placeholder="password"
+                   autocomplete="current-password">
+            <!-- Submit button for login -->
             <input type="submit" class="fadeIn fourth" value="Log In">
         </form>
         <!-- Form to navigate to the registration page -->
         <form action="{{ url_for('register') }}" method="GET">
+            <!-- Register button -->
             <button type="submit">Register</button>
         </form>
+        <!-- Displaying flashed messages if any -->
         {% with messages = get_flashed_messages() %}
             {% if messages %}
+                <!-- List of flashed messages -->
                 <ul class=flashes>
                     {% for message in messages %}
                         <li>{{ message }}</li>
