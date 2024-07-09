@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Building Dashboard</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style scoped>
+        body {
+            background-color: #333333;
+            color: #FFFFFF;
+        }
+
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #444444;
+            padding: 20px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            color: white;
+            width: 200px;
+            height: 150px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            text-decoration: none; /* Remove underline from links */
+        }
+        .info-panel:hover {
+            background-color: #555555;
+        }
+        .icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 10px;
+        }
+        .info-text h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #FFFF;
+        }
+        .info-text p {
+            margin: 0;
+            font-size: 24px;
+            color: #FFFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4 text-warning text-center">Smart Building Dashboard</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-3">
+                <a href="/devices" class="info-panel">
+                    <img src="{{ url_for('static', filename='images/enchufe.png') }}" alt="Devices Icon" class="icon">
+                    <div class="info-text">
+                        <h3>Devices</h3>
+                        <p>3</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/consumption" class="info-panel">
+                    <img src="{{ url_for('static', filename='images/rayo.png') }}" alt="Consumption Icon" class="icon">
+                    <div class="info-text">
+                        <h3>Consumption</h3>
+                        <p>35 kWh</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/carbon" class="info-panel">
+                    <img src="{{ url_for('static', filename='images/co2.png') }}" alt="Carbon Icon" class="icon">
+                    <div class="info-text">
+                        <h3>Carbon Emissions</h3>
+                        <p>2.0 kg</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/energy-savings" class="info-panel">
+                    <img src="{{ url_for('static', filename='images/ahorroEnergetico.png') }}" alt="Energy Savings Icon" class="icon">
+                    <div class="info-text">
+                        <h3>Energy Savings</h3>
+                        <p>10%</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="/economic-savings" class="info-panel">
+                    <img src="{{ url_for('static', filename='images/monedas.png') }}" alt="Economic Savings Icon" class="icon">
+                    <div class="info-text">
+                        <h3>Economic Savings</h3>
+                        <p>$50</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

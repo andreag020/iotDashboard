@@ -4,23 +4,146 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tuya Smart Web App</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Include Socket.IO library for real-time communication -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <!-- Include jQuery library for easier JavaScript manipulation -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Include the main JavaScript file for this app -->
+    <script src="/static/main.js"></script>
+    <style scoped>
+        body {
+            background-color: #333333;
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .device-list-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .device-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #444444;
+            color: #ffc107;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .device-info {
+            flex-grow: 1;
+            font-size: 1.2em;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #ffc107;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        .logout-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn-logout {
+            background-color: #ffc107;
+            color: #333333;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border-radius: 8px;
+        }
+
+        .btn-logout:hover {
+            background-color: #ffdb4d;
+        }
+    </style>
 </head>
 <body>
-    <h1>Mis dispositivos Tuya</h1>
-    <ul>
-        {% for device in devices_tuya %}
-        <li>{{ device }}</li>
-        {% endfor %}
-    </ul>
-    <h1>Base de Datos</h1>
-    <ul>
-        {% for device in devices_db %}
-        <li>{{ device }}</li>
-        {% endfor %}
-    </ul>
-    <br>
-    <form action="{{ url_for('logout') }}" method="POST">
-    <input type="submit" value="Logout">
-</form>
+    <div class="container">
+        <h1 class="mb-4 text-warning">Devices</h1>
+        <div class="device-list-container">
+            <div id="device-list" class="list-unstyled w-100">
+                {% for device in devices_db %}
+                    <div class="device-card">
+                        <div class="device-info">
+                            {{ device.customName }} ({{ device.id }})
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" class="device-toggle" data-device-id="{{ device.id }}"
+                                   {% if device.status[0].value %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="logout-container">
+            <form action="{{ url_for('logout') }}" method="POST">
+                <input type="submit" value="Logout" class="btn btn-logout">
+            </form>
+        </div>
+    </div>
 </body>
 </html>

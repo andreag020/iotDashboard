@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Character encoding for the HTML document -->
+    <meta charset="UTF-8">
+    <!-- Setting the viewport to make the webpage responsive -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Title of the webpage -->
+    <title>Register</title>
+</head>
+<body>
+<!-- Main heading for the registration page -->
+<h1>Register</h1>
+<!-- Registration form -->
+<form action="/register" method="post" id="registration-form">
+    <!-- Email input label and field -->
+    <label for="email">Email:</label><br>
+    <input type="email" id="email" name="email" autocomplete="email" required><br>
+    <!-- Password input label and field -->
+    <label for="password">Password:</label><br>
+    <input type="password" id="password" name="password" autocomplete="new-password" required><br>
+    <!-- Confirm password input label and field -->
+    <label for="confirm_password">Confirm Password:</label><br>
+    <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required><br>
+    <!-- Div to display error messages -->
+    <div class="error">{{ error }}</div>
+    <!-- Submit button for the registration form -->
+    <button type="submit">Register</button>
+</form>
+<!-- JavaScript to validate password matching -->
+<script>
+    document.getElementById('registration-form').addEventListener('submit', function (event) {
+        var password = document.querySelector('input[name="password"]').value;
+        var confirm_password = document.querySelector('input[name="confirm_password"]').value;
+        if (password !== confirm_password) {
+            event.preventDefault();
+            alert('Passwords do not match!');
+        }
+    });
+</script>
+</body>
+</html>
