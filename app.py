@@ -10,7 +10,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from flask_socketio import SocketIO, emit, join_room
 
 from model.app_model import get_tuya_devices, create_user, get_devices_for_user, get_all_users, \
-    update_device_status_tuya, db
+    update_device_status_tuya,get_device_watts_and_time, calculate_energy, get_total_energy_consumption,db
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -67,12 +67,11 @@ def login():
             return redirect(url_for('login'))
 
 
-# Route to display the dashboard with devices
 @app.route('/dashboard')
 @login_required  # Require login to access this route
 def dashboard():
-    return render_template('dashboard.html')
-
+    total_energy = get_total_energy_consumption()
+    return render_template('dashboard.html', total_energy=total_energy)
 
 # Route to display the dashboard with devices
 @app.route('/devices')
@@ -82,11 +81,20 @@ def devices():
     devices_db = get_devices_for_user(current_user.id)
     return render_template('index.html', devices_tuya=devices_tuya, devices_db=devices_db)
 
+
+# Route to display consumption data
 @app.route('/consumption')
 @login_required  # Require login to access this route
 def consumption():
-    # Aquí puedes obtener datos reales de consumo si es necesario
-    return render_template('consumption.html')
+    # Get device consumption data from Firestore
+    devices_info = get_device_watts_and_time()
+    
+    # Calculate energy consumption for each device
+    for device in devices_info:
+        device['energy_kwh'] = calculate_energy(device['watts'], device['time'])
+    
+    # Pass the data to the template
+    return render_template('consumption.html', devices_info=devices_info)
 
 # Route for handling logout
 @app.route('/logout', methods=['GET', 'POST'])

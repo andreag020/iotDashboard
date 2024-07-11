@@ -193,3 +193,54 @@ def update_device_status_tuya(device_id, new_status):
     else:
         logging.error(f"Failed to get device {device_id} status: {device_status_response}")
         return False
+
+
+def get_device_watts_and_time():
+    try:
+        # Get reference to the "Device" collection
+        devices_ref = db.collection('Device')
+
+        # Fetch all documents in the collection
+        devices = devices_ref.stream()
+
+        # List to store watts and time for each device
+        devices_info = []
+
+        # Iterate over each document and get the required fields
+        for device in devices:
+            device_data = device.to_dict()
+            watts = device_data.get('watts')
+            time = device_data.get('time')
+            
+            # Append the info to the list
+            devices_info.append({
+                'id': device.id,
+                'watts': watts,
+                'time': time
+            })
+
+        return devices_info
+    except Exception as e:
+        print("Error retrieving device information from Firestore:", e)
+        return []
+    
+# Function to calculate energy consumption
+def calculate_energy(watts, time):
+    try:
+        time_in_hours = float(time)   # Convert time from seconds to hours
+        energy = watts * time_in_hours  # Energy in watt-hours (Wh)
+        energy_kwh = energy / 1000*7  # Convert Wh to kWh
+        return energy_kwh
+    except Exception as e:
+        print("Error calculating energy consumption:", e)
+        return 0
+
+# Function to get the total energy consumption
+def get_total_energy_consumption():
+    try:
+        devices_info = get_device_watts_and_time()
+        total_energy = sum(calculate_energy(device['watts'], device['time']) for device in devices_info)
+        return total_energy
+    except Exception as e:
+        print("Error calculating total energy consumption:", e)
+        return 0

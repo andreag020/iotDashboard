@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consumption Chart</title>
+    <title>Consumption Data</title>
     <!-- Include Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Include Chart.js for graphs -->
@@ -37,7 +37,7 @@
             <div class="col-md-8">
                 <div class="card">
                     <div class="card-header">
-                        Monthly Consumption
+                        Device Consumption Data
                     </div>
                     <div class="card-body">
                         <canvas id="consumptionChart"></canvas>
@@ -48,30 +48,48 @@
     </div>
 
     <script>
-        // Sample data for the chart
-        var consumptionData = {
-            labels: ['January', 'February', 'March', 'April', 'May', 'June'],
-            datasets: [{
-                label: 'Consumption (kWh)',
-                data: [65, 59, 80, 81, 56, 55],
-                backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                borderColor: 'rgba(255, 193, 7, 1)',
-                borderWidth: 1
-            }]
-        };
+        document.addEventListener('DOMContentLoaded', function() {
+            // Prepare the labels and data for the chart
+            const labels = {{ devices_info|tojson }}.map(device => device.id);
+            const energyData = {{ devices_info|tojson }}.map(device => device.energy_kwh);
 
-        // Consumption Chart
-        var ctxConsumption = document.getElementById('consumptionChart').getContext('2d');
-        var consumptionChart = new Chart(ctxConsumption, {
-            type: 'bar',
-            data: consumptionData,
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+            // Create the chart
+            const ctxConsumption = document.getElementById('consumptionChart').getContext('2d');
+            const consumptionChart = new Chart(ctxConsumption, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Consumption (kWh)',
+                        data: energyData,
+                        backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: "#FFFFFF" // Color of the Y-axis labels
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: "#FFFFFF" // Color of the X-axis labels
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#FFFFFF" // Color of the legend labels
+                            }
+                        }
                     }
                 }
-            }
+            });
         });
     </script>
 </body>

@@ -7,26 +7,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Title of the webpage -->
     <title>Register</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Overpass:wght@400;700&display=swap');
+
+        body {
+            background-color: #333333;
+            font-family: 'Overpass', sans-serif;
+            color: #ccc;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        #formContent {
+            background: #444444;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 350px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="submit"],
+        button {
+            display: block;
+            width: calc(100% - 20px);
+            margin: 15px auto;
+            padding: 15px;
+            border-radius: 5px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            background-color: #555555;
+            color: #ffc107;
+            border: 1px solid #777777;
+        }
+
+        button[type="submit"] {
+            background-color: #ffc107;
+            color: #333333;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #e0a800;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border: 1px solid #ffc107;
+            box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+        }
+
+        .error {
+            color: #ffc107;
+            margin-top: 10px;
+        }
+
+        .fadeIn {
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        .fadeIn.second {
+            animation-delay: 0.5s;
+        }
+
+        .fadeIn.third {
+            animation-delay: 1s;
+        }
+
+        .fadeIn.fourth {
+            animation-delay: 1.5s;
+        }
+    </style>
 </head>
 <body>
-<!-- Main heading for the registration page -->
-<h1>Register</h1>
-<!-- Registration form -->
-<form action="/register" method="post" id="registration-form">
-    <!-- Email input label and field -->
-    <label for="email">Email:</label><br>
-    <input type="email" id="email" name="email" autocomplete="email" required><br>
-    <!-- Password input label and field -->
-    <label for="password">Password:</label><br>
-    <input type="password" id="password" name="password" autocomplete="new-password" required><br>
-    <!-- Confirm password input label and field -->
-    <label for="confirm_password">Confirm Password:</label><br>
-    <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required><br>
-    <!-- Div to display error messages -->
-    <div class="error">{{ error }}</div>
-    <!-- Submit button for the registration form -->
-    <button type="submit">Register</button>
-</form>
+<div class="wrapper">
+    <div id="formContent">
+        <h1 class="fadeIn">Register</h1>
+        <form action="/register" method="post" id="registration-form">
+            <input type="email" id="email" name="email" class="fadeIn second" placeholder="Email" autocomplete="email" required>
+            <input type="password" id="password" name="password" class="fadeIn third" placeholder="Password" autocomplete="new-password" required>
+            <input type="password" id="confirm_password" name="confirm_password" class="fadeIn fourth" placeholder="Confirm Password" autocomplete="new-password" required>
+            <div class="error">{{ error }}</div>
+            <button type="submit" class="fadeIn">Register</button>
+        </form>
+    </div>
+</div>
 <!-- JavaScript to validate password matching -->
 <script>
     document.getElementById('registration-form').addEventListener('submit', function (event) {
