@@ -1,16 +1,15 @@
 import json
 import logging
 import os
-
 import pyrebase
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, url_for, jsonify
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_socketio import SocketIO, emit, join_room
-
 from model.app_model import get_tuya_devices, create_user, get_devices_for_user, get_all_users, \
-    update_device_status_tuya,get_device_watts_and_time, calculate_energy, get_total_energy_consumption,db
+update_device_status_tuya,get_device_watts_and_time, calculate_daily_energy,get_total_energy_consumption,get_device_type,calculate_daily_co2_emissions, get_total_emission,get_device_count_for_user,db
+
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -33,11 +32,9 @@ pb = pyrebase.initialize_app(json.load(open('model/firebase/iot-dashboard-fireba
 # Get all users from the database
 users = get_all_users()
 
-
 # Define the User class for user handling with Flask-Login
 class User(UserMixin):
     pass
-
 
 # Define the function to load a user by their ID
 @login_manager.user_loader
@@ -45,7 +42,6 @@ def user_loader(user_id):
     user = User()
     user.id = user_id
     return user
-
 
 # Route for handling login
 @app.route('/login', methods=['GET', 'POST'])
@@ -66,35 +62,62 @@ def login():
             flash('Invalid email or password')
             return redirect(url_for('login'))
 
-
 @app.route('/dashboard')
 @login_required  # Require login to access this route
 def dashboard():
+    
     total_energy = get_total_energy_consumption()
-    return render_template('dashboard.html', total_energy=total_energy)
+    total_emissions=get_total_emission()
+    return render_template('dashboard.html', total_energy=total_energy,total_emissions=total_emissions)
 
-# Route to display the dashboard with devices
 @app.route('/devices')
-@login_required  # Require login to access this route
+@login_required  # Requiere inicio de sesión para acceder a esta ruta
 def devices():
     devices_tuya = get_tuya_devices()
     devices_db = get_devices_for_user(current_user.id)
-    return render_template('index.html', devices_tuya=devices_tuya, devices_db=devices_db)
+    device_types = get_device_type()  # Llamada a la nueva función
 
+    # Pasar la información de los tipos de dispositivos a la plantilla
+    return render_template('devices.html', devices_tuya=devices_tuya, devices_db=devices_db, device_types=device_types)
 
-# Route to display consumption data
+#ruta de consumo
 @app.route('/consumption')
 @login_required  # Require login to access this route
 def consumption():
     # Get device consumption data from Firestore
     devices_info = get_device_watts_and_time()
     
-    # Calculate energy consumption for each device
+    # Calculate daily energy consumption for each device
     for device in devices_info:
-        device['energy_kwh'] = calculate_energy(device['watts'], device['time'])
+        device['energy_kwh'] = calculate_daily_energy(device['watts'], device['time'])
     
     # Pass the data to the template
     return render_template('consumption.html', devices_info=devices_info)
+
+#Ruta para obtener las emisiones de CO2
+@app.route('/emissions')
+@login_required  # Require login to access this route
+def emissions():
+    # Get device consumption data from Firestore
+    devices_info = get_device_watts_and_time()
+    
+    # Calculate daily energy consumption and CO2 emissions for each device
+    for device in devices_info:
+        device['energy_kwh'] = calculate_daily_energy(device['watts'], device['time'])
+        device['co2_emissions'] = calculate_daily_co2_emissions(device['energy_kwh'])
+    
+    # Calculate total CO2 emissions per day
+    if devices_info:
+        num_days = len(devices_info[0]['time'])
+        total_co2_emissions_per_day = [0] * num_days
+        for day_index in range(num_days):
+            total_co2_emissions_per_day[day_index] = sum(device['co2_emissions'][day_index] for device in devices_info)
+    else:
+        total_co2_emissions_per_day = []
+
+    # Pass the data to the template
+    return render_template('emissions.html', total_co2_emissions_per_day=total_co2_emissions_per_day)
+
 
 # Route for handling logout
 @app.route('/logout', methods=['GET', 'POST'])
@@ -102,7 +125,6 @@ def consumption():
 def logout():
     logout_user()
     return redirect(url_for('login'))
-
 
 # Route for registering new users
 @app.route('/register', methods=['GET', 'POST'])
@@ -130,14 +152,12 @@ def register():
     else:
         return render_template('registration.html')
 
-
 # Route to get updated devices for the current user
 @app.route('/get_updated_devices')
 @login_required  # Require login to access this route
 def get_updated_devices():
     devices_db = get_devices_for_user(current_user.id)
     return jsonify(devices_db=devices_db)
-
 
 # Route to update the status of a device
 @app.route('/update_device_status', methods=['POST'])
@@ -159,7 +179,6 @@ def update_device_status():
     except Exception as e:
         logging.error(f"Error updating device status: {e}")
         return jsonify(success=False, error=str(e))
-
 
 # Function to handle device updates from Firestore
 def on_device_update(docs, changes, read_time):
@@ -184,10 +203,8 @@ def on_device_update(docs, changes, read_time):
                         # If the status hasn't changed, still send the POST request to ensure synchronization
                         update_device_status_tuya(device['id'], current_status)
 
-
 # Register Firestore listener for updates in the 'Device' collection
 db.collection('Device').on_snapshot(on_device_update)
-
 
 # Handle new client connections via SocketIO
 @socketio.on('connect')
@@ -199,7 +216,6 @@ def handle_connect():
     else:
         logging.warning("No authenticated user found for handle_connect")
 
-
 # Root route that redirects to log in or dashboard depending on user's authentication status
 @app.route('/')
 def index():
@@ -209,7 +225,6 @@ def index():
         return redirect(url_for('dashboard'))
     else:
         return redirect(url_for('login'))
-
 
 # Run the Flask application with support for SocketIO
 if __name__ == '__main__':

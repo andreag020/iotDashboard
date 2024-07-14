@@ -2,7 +2,6 @@
 
 import logging
 import os
-
 import firebase_admin
 from firebase_admin import firestore, credentials, auth
 from flask_login import LoginManager, current_user
@@ -28,10 +27,8 @@ db = firestore.client()
 # Initialize the login manager
 login_manager = LoginManager()
 
-
 class User(UserMixin):
     pass
-
 
 def get_firestore_devices():
     try:
@@ -54,11 +51,9 @@ def get_firestore_devices():
         print("Error retrieving devices from Firestore:", e)
         return []
 
-
 def create_user(email, password):
     user = auth.create_user(email=email, password=password)
     return user.uid
-
 
 def get_all_users():
     # Get a reference to the auth service
@@ -76,7 +71,6 @@ def get_all_users():
 
     return user_ids
 
-
 def get_all_types():
     # Get reference to the "Type" collection
     types_ref = db.collection('Type')
@@ -88,7 +82,6 @@ def get_all_types():
     type_list = [{'id': type_.id, 'name': type_.to_dict()['name']} for type_ in types]
     return type_list
 
-
 @login_manager.user_loader
 def user_loader(user_id):
     user = auth.get_user(user_id)
@@ -98,12 +91,10 @@ def user_loader(user_id):
         return user_obj
     return None
 
-
 def add_device_to_firestore(device_id, device_info):
     # Add or update a device in Firestore
     device_ref = db.collection('Device').document(device_id)
     device_ref.set(device_info, merge=True)
-
 
 def get_tuya_devices():
     TUYA_LOGGER.setLevel(logging.DEBUG)
@@ -148,12 +139,10 @@ def get_tuya_devices():
 
     return device_ids
 
-
 def add_device_to_user(user_id, device_name, device_type):
     # Add a new device for the user in Firestore
     device_ref = db.collection('Device').document()
     device_ref.set({'name': device_name, 'type': device_type, 'user_id': user_id, 'is_active': False})
-
 
 def get_devices_for_user(user_id):
     # Get all devices for a specific user
@@ -162,6 +151,17 @@ def get_devices_for_user(user_id):
     device_list = [{'id': device.id, **device.to_dict()} for device in devices]
     return device_list
 
+#Obtener numero de dispositivos por usuario
+def get_device_count_for_user(user_id):
+    try:
+        # Get reference to the "Device" collection
+        devices_ref = db.collection('Device')
+        devices = devices_ref.where(filter=FieldFilter('user_id', '==', user_id)).stream()
+        device_count = sum(1 for _ in devices)  # Count the number of devices
+        return device_count
+    except Exception as e:
+        print("Error counting devices for user:", e)
+        return 0
 
 def update_device_status_tuya(device_id, new_status):
     TUYA_LOGGER.setLevel(logging.DEBUG)
@@ -194,7 +194,6 @@ def update_device_status_tuya(device_id, new_status):
         logging.error(f"Failed to get device {device_id} status: {device_status_response}")
         return False
 
-
 def get_device_watts_and_time():
     try:
         # Get reference to the "Device" collection
@@ -209,14 +208,92 @@ def get_device_watts_and_time():
         # Iterate over each document and get the required fields
         for device in devices:
             device_data = device.to_dict()
-            watts = device_data.get('watts')
-            time = device_data.get('time')
+            watts = device_data.get('watts', 0)  # Default to 0 if not found
+            time_array = device_data.get('time', [])  # Default to empty list if not found
             
             # Append the info to the list
             devices_info.append({
                 'id': device.id,
                 'watts': watts,
-                'time': time
+                'time': time_array  # Use the time array
+            })
+
+        return devices_info
+    except Exception as e:
+        print("Error retrieving device information from Firestore:", e)
+        return []
+
+# Function to calculate daily energy consumption
+def calculate_daily_energy(watts, time_array):
+    try:
+        energy_array = [watts * time for time in time_array]  # Energy in watt-hours (Wh) for each day
+        energy_kwh_array = [energy / 1000 for energy in energy_array]  # Convert Wh to kWh
+        return energy_kwh_array
+    except Exception as e:
+        print("Error calculating daily energy consumption:", e)
+        return []
+
+# Función para calcular las emeisiones diariaqs de carbono
+def calculate_daily_co2_emissions(energy_kwh_array, emission_factor=0.5015):
+    try:
+        co2_emissions_array = [energy_kwh * emission_factor for energy_kwh in energy_kwh_array]
+        return co2_emissions_array
+    except Exception as e:
+        print("Error calculating daily CO2 emissions:", e)
+        return []
+
+    
+# Function to get the total energy consumption
+def get_total_energy_consumption():
+    try:
+        devices_info = get_device_watts_and_time()
+        total_energy = 0
+        for device in devices_info:
+            daily_energy = calculate_daily_energy(device['watts'], device['time'])
+            total_energy += sum(daily_energy)  # Sum the daily energy to get the total energy for each device
+        total_energy = round(total_energy, 2)  # Round to two decimal places
+        return total_energy
+    except Exception as e:
+        print("Error calculating total energy consumption:", e)
+        return 0
+
+def get_total_emission():
+    try:
+        devices_info = get_device_watts_and_time()
+        total_emissions = 0
+        for device in devices_info:
+            daily_energy = calculate_daily_energy(device['watts'], device['time'])
+            daily_emissions = calculate_daily_co2_emissions(daily_energy)
+            total_emissions += sum(daily_emissions)  # Sum the daily emissions to get the total emissions for each device
+        total_emissions = round(total_emissions, 2)  # Round to two decimal places
+        return total_emissions
+    except Exception as e:
+        print("Error calculating total CO2 emissions:", e)
+        return 0
+
+
+
+#Funcion para obtener el tipo de dispositivo por su id
+def get_device_type():
+    try:
+        # Get reference to the "Device" collection
+        devices_ref = db.collection('Device')
+
+        # Fetch all documents in the collection
+        devices = devices_ref.stream()
+
+        # List to store watts and time for each device
+        devices_info = []
+
+        # Iterate over each document and get the required fields
+        for device in devices:
+            device_data = device.to_dict()
+            type = device_data.get('type')
+            
+            # Append the info to the list
+            devices_info.append({
+                'id': device.id,
+                'type': type,
             })
 
         return devices_info
@@ -224,23 +301,5 @@ def get_device_watts_and_time():
         print("Error retrieving device information from Firestore:", e)
         return []
     
-# Function to calculate energy consumption
-def calculate_energy(watts, time):
-    try:
-        time_in_hours = float(time)   # Convert time from seconds to hours
-        energy = watts * time_in_hours  # Energy in watt-hours (Wh)
-        energy_kwh = energy / 1000*7  # Convert Wh to kWh
-        return energy_kwh
-    except Exception as e:
-        print("Error calculating energy consumption:", e)
-        return 0
 
-# Function to get the total energy consumption
-def get_total_energy_consumption():
-    try:
-        devices_info = get_device_watts_and_time()
-        total_energy = sum(calculate_energy(device['watts'], device['time']) for device in devices_info)
-        return total_energy
-    except Exception as e:
-        print("Error calculating total energy consumption:", e)
-        return 0
+    

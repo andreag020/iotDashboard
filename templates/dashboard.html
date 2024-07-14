@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,86 +13,141 @@
             color: #FFFFFF;
         }
 
+        .container-custom {
+            max-width: 1200px;
+            /* Custom container width */
+        }
+
         .info-panel {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             background-color: #444444;
-            padding: 20px;
-            margin: 10px;
+            padding: 25px;
+            margin: 25px;
+            /* Increased margin */
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s;
             color: white;
-            width: 200px;
+            width: 350px;
             height: 150px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            text-decoration: none; /* Remove underline from links */
+            text-decoration: none;
+            /* Remove underline from links */
         }
+
         .info-panel:hover {
-            background-color: #555555;
-        }
+        background-color: #555555;
+        box-shadow: 0 0 20px rgba(255, 193, 7, 0.7), 0 0 30px rgba(255, 193, 7, 0.5); /* Added glowing effect */
+    }
         .icon {
-            width: 40px;
-            height: 40px;
-            margin-bottom: 10px;
+            width: 70px;
+            /* Increased icon size */
+            height: 70px;
+            /* Increased icon size */
+            margin-right: 20px;
         }
+
+        .info-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            /* Align text to the left */
+            text-align: center;
+            /* Center the text inside the container */
+            width: 100%;
+        }
+
         .info-text h3 {
             margin: 0;
-            font-size: 18px;
-            color: #FFFF;
+            font-size: 25px;
+            /* Increased font size */
+            color: #c7c7c7;
+            width: 100%;
+            /* Make sure h3 takes full width */
         }
+
         .info-text p {
             margin: 0;
-            font-size: 24px;
-            color: #FFFF;
+            font-size: 28px;
+            /* Increased font size */
+            color: #c7c7c7;
+            width: 100%;
+            /* Make sure p takes full width */
+        }
+
+        .dashboard-title {
+            color: #FCC419;
+            /* Custom yellow color for the title */
+        }
+        .logout-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .btn-logout {
+            background-color: #ffc107;
+            color: #333333;
+            border: none;
+            padding: 10px 20px;
+            font-size: 2em;
+            border-radius: 8px;
+        }
+        .btn-logout:hover {
+            background-color: #ffdb4d;
         }
     </style>
 </head>
+
 <body>
-    <div class="container mt-4">
-        <h1 class="mb-4 text-warning text-center">Smart Building Dashboard</h1>
+    <div class="container mt-4 container-custom">
+        <h1 class="mb-4 text-center dashboard-title">Smart Building Dashboard</h1>
         <div class="row justify-content-center">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <a href="/devices" class="info-panel">
                     <img src="{{ url_for('static', filename='images/enchufe.png') }}" alt="Devices Icon" class="icon">
                     <div class="info-text">
-                        <h3>Devices</h3>
+                        <h3>Dispositivos</h3>
                         <p>3</p>
                     </div>
                 </a>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <a href="/consumption" class="info-panel">
                     <img src="{{ url_for('static', filename='images/rayo.png') }}" alt="Consumption Icon" class="icon">
                     <div class="info-text">
-                        <h3>Consumption</h3>
+                        <h3>Consumo</h3>
                         <p>{{ total_energy }} kWh</p>
                     </div>
                 </a>
             </div>
-            <div class="col-md-3">
-                <a href="/carbon" class="info-panel">
+            <div class="col-md-4">
+                <a href="/emissions" class="info-panel">
                     <img src="{{ url_for('static', filename='images/co2.png') }}" alt="Carbon Icon" class="icon">
                     <div class="info-text">
-                        <h3>Carbon Emissions</h3>
-                        <p>2.0 kg</p>
+                        <h3>Emisiones de Carbono</h3>
+                        <p>{{total_emissions}} KgCo2</p>
                     </div>
                 </a>
             </div>
-            <div class="col-md-3">
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-4">
                 <a href="/energy-savings" class="info-panel">
-                    <img src="{{ url_for('static', filename='images/ahorroEnergetico.png') }}" alt="Energy Savings Icon" class="icon">
+                    <img src="{{ url_for('static', filename='images/ahorroEnergetico.png') }}" alt="Energy Savings Icon"
+                        class="icon">
                     <div class="info-text">
                         <h3>Energy Savings</h3>
                         <p>10%</p>
                     </div>
                 </a>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <a href="/economic-savings" class="info-panel">
-                    <img src="{{ url_for('static', filename='images/monedas.png') }}" alt="Economic Savings Icon" class="icon">
+                    <img src="{{ url_for('static', filename='images/monedas.png') }}" alt="Economic Savings Icon"
+                        class="icon">
                     <div class="info-text">
                         <h3>Economic Savings</h3>
                         <p>$50</p>
@@ -99,6 +155,12 @@
                 </a>
             </div>
         </div>
+        <div class="logout-container">
+            <form action="{{ url_for('logout') }}" method="POST">
+                <input type="submit" value="Cerrar Sesión" class="btn btn-logout">
+            </form>
+        </div>
     </div>
 </body>
+
 </html>

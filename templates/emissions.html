@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consumption Data</title>
+    <title>CO2 Emissions Data</title>
     <!-- Include Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Include Chart.js for graphs -->
@@ -29,7 +29,7 @@
             padding: 20px;
         }
 
-        #consumptionChart {
+        #emissionsChart {
             width: 100% !important;
             height: 80vh !important; /* Adjust the height as needed */
         }
@@ -37,15 +37,15 @@
 </head>
 <body>
     <div class="container mt-4">
-        <h1 class="mb-4 text-warning text-center">Consumption</h1>
+        <h1 class="mb-4 text-warning text-center">CO2 Emissions</h1>
         <div class="row justify-content-center">
             <div class="col-md-10"> <!-- Adjusted column width -->
                 <div class="card">
                     <div class="card-header">
-                        Device Consumption Data
+                        Total CO2 Emissions Data
                     </div>
                     <div class="card-body">
-                        <canvas id="consumptionChart"></canvas>
+                        <canvas id="emissionsChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -54,33 +54,37 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const devices = {{ devices_info|tojson }};
-            const labels = devices.length > 0 ? devices[0].time.map((_, index) => `Day ${index + 1}`) : [];
+            const totalCo2EmissionsPerDay = {{ total_co2_emissions_per_day|tojson }};
+            const labels = totalCo2EmissionsPerDay.map((_, index) => `Day ${index + 1}`);
 
-            // Calculate total consumption per day
-            const totalConsumptionPerDay = labels.map((_, dayIndex) => {
-                return devices.reduce((total, device) => {
-                    return total + device.energy_kwh[dayIndex];
-                }, 0);
-            });
-
-            const ctxConsumption = document.getElementById('consumptionChart').getContext('2d');
-            const consumptionChart = new Chart(ctxConsumption, {
-                type: 'bar',
+            const ctxEmissions = document.getElementById('emissionsChart').getContext('2d');
+            const emissionsChart = new Chart(ctxEmissions, {
+                type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Total Consumption (kWh)',
-                        data: totalConsumptionPerDay,
+                        label: 'Total CO2 Emissions (kg CO2)',
+                        data: totalCo2EmissionsPerDay,
                         backgroundColor: 'rgba(255, 193, 7, 0.2)',
                         borderColor: 'rgba(255, 193, 7, 1)',
-                        borderWidth: 1
+                        borderWidth: 2,
+                        fill: true
                     }]
                 },
                 options: {
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'kg CO2'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Days'
+                            }
                         }
                     },
                     maintainAspectRatio: false, // Allow the chart to take up more space
