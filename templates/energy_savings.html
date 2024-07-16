@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Savings Data</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Include Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style scoped>
+        body {
+            background-color: #333333;
+            color: #FFFFFF;
+        }
+
+        .card {
+            background-color: #3a3737;
+            color: #ffc107;
+            border-radius: 8px;
+        }
+
+        .card-header {
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        #energySavingsChart {
+            width: 100% !important;
+            height: 60vh !important;
+        }
+
+        .savings-info {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4 text-warning text-center">Energy Savings</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header">
+                        Energy Consumption Comparison
+                    </div>
+                    <div class="card-body">
+                        <canvas id="energySavingsChart"></canvas>
+                        <div class="savings-info">
+                            <p>Energy Savings: <span id="energySavings"></span> kWh</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const energyData = {{ total_energy_by_month|tojson }};
+            const labels = Object.keys(energyData);
+            const data = Object.values(energyData);
+
+            const ctxEnergySavings = document.getElementById('energySavingsChart').getContext('2d');
+            const energySavingsChart = new Chart(ctxEnergySavings, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Energy Consumption (kWh)',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(255, 193, 7, 0.2)',  // Light Yellow
+                            'rgba(128, 0, 128, 0.2)'   // Light Purple
+                        ],
+                        borderColor: [
+                            'rgba(255, 193, 7, 1)',    // Yellow
+                            'rgba(128, 0, 128, 1)'     // Purple
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            document.getElementById('energySavings').textContent = {{ energy_savings|tojson }};
+        });
+    </script>
+</body>
+</html>

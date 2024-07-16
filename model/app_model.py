@@ -194,7 +194,7 @@ def update_device_status_tuya(device_id, new_status):
         logging.error(f"Failed to get device {device_id} status: {device_status_response}")
         return False
 
-def get_device_watts_and_time():
+"""def get_device_watts_and_time():
     try:
         # Get reference to the "Device" collection
         devices_ref = db.collection('Device')
@@ -221,8 +221,50 @@ def get_device_watts_and_time():
         return devices_info
     except Exception as e:
         print("Error retrieving device information from Firestore:", e)
+        return []"""""
+
+def get_device_watts_and_time():
+    try:
+        # Get reference to the "Device" collection
+        devices_ref = db.collection('Device')
+
+        # Fetch all documents in the collection
+        devices = devices_ref.stream()
+
+        # List to store watts and time for each device
+        devices_info = []
+
+        # Iterate over each document and get the required fields
+        for device in devices:
+            device_data = device.to_dict()
+            watts = device_data.get('watts', 0)  # Default to 0 if not found
+            times = device_data.get('times', {})  # Default to empty dict if not found
+
+            # Initialize time array
+            time_array = []
+
+            if times:
+                # Navigate to the specific month (e.g., July 2024)
+                time_array = times.get('2024', {}).get('Julio', [])
+
+            # Append the info to the list
+            devices_info.append({
+                'id': device.id,
+                'watts': watts,
+                'time': time_array  # Use the time array for the specific month
+            })
+
+        return devices_info
+    except Exception as e:
+        print("Error retrieving device information from Firestore:", e)
         return []
 
+# Ejemplo de uso para actualizar los dispositivos
+devices_info = get_device_watts_and_time()
+for device in devices_info:
+    print(f"Device ID: {device['id']}, Watts: {device['watts']}, Time Array: {device['time']}")
+
+###################################################################
 # Function to calculate daily energy consumption
 def calculate_daily_energy(watts, time_array):
     try:
@@ -301,5 +343,74 @@ def get_device_type():
         print("Error retrieving device information from Firestore:", e)
         return []
     
+################FUNCIONES TEMPORALES#########
+
+def get_device_watts_and_time_for_months(year='2024', months=['Junio', 'Julio']):
+    try:
+        devices_ref = db.collection('Device')
+        devices = devices_ref.stream()
+        devices_info = []
+
+        for device in devices:
+            device_data = device.to_dict()
+            watts = device_data.get('watts', 0)
+            times = device_data.get('times', {})
+
+            monthly_times = {month: [] for month in months}
+
+            if times:
+                for month in months:
+                    monthly_times[month] = times.get(year, {}).get(month, [])
+
+            devices_info.append({
+                'id': device.id,
+                'watts': watts,
+                'times': monthly_times
+            })
+
+        return devices_info
+    except Exception as e:
+        print("Error retrieving device information from Firestore:", e)
+        return []
+
+def calculate_energy_savings(devices_info, months=['Junio', 'Julio']):
+    try:
+        total_energy_by_month = {month: 0 for month in months}
+
+        for device in devices_info:
+            for month in months:
+                daily_energy = calculate_daily_energy(device['watts'], device['times'][month])
+                total_energy_by_month[month] += sum(daily_energy)
+
+        energy_savings = total_energy_by_month[months[0]] - total_energy_by_month[months[1]]
+        return total_energy_by_month, energy_savings
+    except Exception as e:
+        print("Error calculating energy savings:", e)
+        return {}, 0
+
+def calculate_economic_cost(energy_kwh_array, price_per_kwh=0.10):
+    try:
+        cost_array = [energy_kwh * price_per_kwh for energy_kwh in energy_kwh_array]
+        return cost_array
+    except Exception as e:
+        print("Error calculating economic cost:", e)
+        return []
+
+def calculate_economic_savings(devices_info, months=['Junio', 'Julio'], price_per_kwh=0.10):
+    try:
+        total_cost_by_month = {month: 0 for month in months}
+
+        for device in devices_info:
+            for month in months:
+                daily_energy = calculate_daily_energy(device['watts'], device['times'][month])
+                total_energy = sum(daily_energy)
+                monthly_cost = total_energy * price_per_kwh
+                total_cost_by_month[month] += monthly_cost
+
+        economic_savings = total_cost_by_month[months[0]] - total_cost_by_month[months[1]]
+        return total_cost_by_month, economic_savings
+    except Exception as e:
+        print("Error calculating economic savings:", e)
+        return {}, 0
 
     

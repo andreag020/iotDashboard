@@ -8,7 +8,7 @@ from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_socketio import SocketIO, emit, join_room
 from model.app_model import get_tuya_devices, create_user, get_devices_for_user, get_all_users, \
-update_device_status_tuya,get_device_watts_and_time, calculate_daily_energy,get_total_energy_consumption,get_device_type,calculate_daily_co2_emissions, get_total_emission,get_device_count_for_user,db
+update_device_status_tuya,get_device_watts_and_time, calculate_daily_energy,get_total_energy_consumption,get_device_type,calculate_daily_co2_emissions, get_total_emission, get_device_watts_and_time_for_months,calculate_energy_savings,calculate_economic_savings,db
 
 
 # Load environment variables from the .env file
@@ -94,6 +94,10 @@ def consumption():
     # Pass the data to the template
     return render_template('consumption.html', devices_info=devices_info)
 
+
+
+
+
 #Ruta para obtener las emisiones de CO2
 @app.route('/emissions')
 @login_required  # Require login to access this route
@@ -118,6 +122,24 @@ def emissions():
     # Pass the data to the template
     return render_template('emissions.html', total_co2_emissions_per_day=total_co2_emissions_per_day)
 
+##########RUTA PARA AHORRO ENERGÉTICO########
+@app.route('/energy_savings')
+@login_required
+def energy_savings():
+    devices_info = get_device_watts_and_time_for_months(year='2024', months=['Junio', 'Julio'])
+    total_energy_by_month, energy_savings = calculate_energy_savings(devices_info, months=['Junio', 'Julio'])
+    
+    return render_template('energy_savings.html', total_energy_by_month=total_energy_by_month, energy_savings=energy_savings)
+
+
+##################RUTA PARA AHORRO ECONOMICO################
+@app.route('/economic_savings')
+@login_required
+def economic_savings():
+    devices_info = get_device_watts_and_time_for_months(year='2024', months=['Junio', 'Julio'])
+    total_cost_by_month, economic_savings = calculate_economic_savings(devices_info, months=['Junio', 'Julio'], price_per_kwh=0.10)
+    
+    return render_template('economic_savings.html', total_cost_by_month=total_cost_by_month, economic_savings=economic_savings)
 
 # Route for handling logout
 @app.route('/logout', methods=['GET', 'POST'])

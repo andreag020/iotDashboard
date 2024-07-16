@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economic Savings Data</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Include Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style scoped>
+        body {
+            background-color: #333333;
+            color: #FFFFFF;
+        }
+
+        .card {
+            background-color: #3a3737;
+            color: #ffc107;
+            border-radius: 8px;
+        }
+
+        .card-header {
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        #economicSavingsChart {
+            width: 100% !important;
+            height: 60vh !important;
+        }
+
+        .savings-info {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+
+        .positive-savings {
+            color: rgb(13, 255, 13);
+        }
+
+        .negative-savings {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4 text-warning text-center">Economic Savings</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header">
+                        Economic Cost Comparison
+                    </div>
+                    <div class="card-body">
+                        <canvas id="economicSavingsChart"></canvas>
+                        <div class="savings-info">
+                            <p>Economic Savings: <span id="economicSavings"></span> $</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const costData = {{ total_cost_by_month|tojson }};
+            const labels = Object.keys(costData);
+            const data = Object.values(costData);
+
+            const ctxEconomicSavings = document.getElementById('economicSavingsChart').getContext('2d');
+            const economicSavingsChart = new Chart(ctxEconomicSavings, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Economic Cost ($)',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(255, 193, 7, 0.2)',  // Light Yellow
+                            'rgba(128, 0, 128, 0.2)'   // Light Purple
+                        ],
+                        borderColor: [
+                            'rgba(255, 193, 7, 1)',    // Yellow
+                            'rgba(128, 0, 128, 1)'     // Purple
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            const economicSavings = {{ economic_savings|tojson }};
+            const economicSavingsElement = document.getElementById('economicSavings');
+            economicSavingsElement.textContent = economicSavings.toFixed(2);
+
+            if (economicSavings >= 0) {
+                economicSavingsElement.classList.add('positive-savings');
+            } else {
+                economicSavingsElement.classList.add('negative-savings');
+            }
+        });
+    </script>
+</body>
+</html>
