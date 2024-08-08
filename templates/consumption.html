@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consumption Data</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Include Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style scoped>
+        body {
+            background-color: #333333;
+            color: #FFFFFF;
+        }
+
+        .card {
+            background-color: #3a3737;
+            color: #ffc107;
+            border-radius: 8px;
+        }
+
+        .card-header {
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        #consumptionChart {
+            width: 100% !important;
+            height: 80vh !important; /* Adjust the height as needed */
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4 text-warning text-center">Consumption</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-10"> <!-- Adjusted column width -->
+                <div class="card">
+                    <div class="card-header">
+                        Device Consumption Data
+                    </div>
+                    <div class="card-body">
+                        <canvas id="consumptionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const devices = {{ devices_info|tojson }};
+            const labels = devices.length > 0 ? devices[0].time.map((_, index) => `Day ${index + 1}`) : [];
+
+            // Calculate total consumption per day
+            const totalConsumptionPerDay = labels.map((_, dayIndex) => {
+                return devices.reduce((total, device) => {
+                    return total + device.energy_kwh[dayIndex];
+                }, 0);
+            });
+
+            const ctxConsumption = document.getElementById('consumptionChart').getContext('2d');
+            const consumptionChart = new Chart(ctxConsumption, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Consumption (kWh)',
+                        data: totalConsumptionPerDay,
+                        backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    maintainAspectRatio: false, // Allow the chart to take up more space
+                    responsive: true // Make the chart responsive
+                }
+            });
+        });
+    </script>
+</body>
+</html>
