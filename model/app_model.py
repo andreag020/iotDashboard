@@ -3,6 +3,7 @@
 import locale
 import logging
 import os
+
 from datetime import datetime, timedelta
 
 import firebase_admin
@@ -12,6 +13,7 @@ from flask_login import UserMixin
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from tuya_connector import TuyaOpenAPI, TUYA_LOGGER
+
 
 # Establecer la localización en español para que los nombres de los meses sean en español
 locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
@@ -114,6 +116,66 @@ def add_device_to_firestore(device_id, device_info):
     device_ref = db.collection('Device').document(device_id)
     device_ref.set(device_info, merge=True)
 
+        # Fetch all documents in the collection
+        devices = devices_ref.stream()
+
+        # List to store device IDs
+        device_ids = []
+
+        # Iterate over each document and get its ID
+        for device in devices:
+            device_id = device.id
+            device_ids.append(device_id)
+
+        return device_ids
+    except Exception as e:
+        print("Error retrieving devices from Firestore:", e)
+        return []
+
+def create_user(email, password):
+    user = auth.create_user(email=email, password=password)
+    return user.uid
+
+def get_all_users():
+    # Get a reference to the auth service
+    auth = firebase_admin.auth
+
+    # Get the first page of users
+    page = auth.list_users()
+
+    # List to store user IDs
+    user_ids = []
+
+    # Iterate over all users in the page
+    for user in page.iterate_all():
+        user_ids.append(user.uid)
+
+    return user_ids
+
+def get_all_types():
+    # Get reference to the "Type" collection
+    types_ref = db.collection('Type')
+
+    # Fetch all documents in the collection
+    types = types_ref.stream()
+
+    # List to store types
+    type_list = [{'id': type_.id, 'name': type_.to_dict()['name']} for type_ in types]
+    return type_list
+
+@login_manager.user_loader
+def user_loader(user_id):
+    user = auth.get_user(user_id)
+    if user:
+        user_obj = User()
+        user_obj.id = user.uid
+        return user_obj
+    return None
+
+def add_device_to_firestore(device_id, device_info):
+    # Add or update a device in Firestore
+    device_ref = db.collection('Device').document(device_id)
+    device_ref.set(device_info, merge=True)
 
 def get_tuya_devices():
     TUYA_LOGGER.setLevel(logging.DEBUG)
@@ -158,6 +220,10 @@ def get_tuya_devices():
 
     return device_ids
 
+def add_device_to_user(user_id, device_name, device_type):
+    # Add a new device for the user in Firestore
+    device_ref = db.collection('Device').document()
+    device_ref.set({'name': device_name, 'type': device_type, 'user_id': user_id, 'is_active': False})
 
 def add_device_to_user(user_id, device_name, device_type):
     # Add a new device for the user in Firestore
@@ -484,3 +550,22 @@ def get_available_months(year='2024'):
     except Exception as e:
         print("Error retrieving available months from Firestore:", e)
         return []
+
+def calculate_economic_savings(devices_info, months=['Junio', 'Julio'], price_per_kwh=0.10):
+    try:
+        total_cost_by_month = {month: 0 for month in months}
+
+        for device in devices_info:
+            for month in months:
+                daily_energy = calculate_daily_energy(device['watts'], device['times'][month])
+                total_energy = sum(daily_energy)
+                monthly_cost = total_energy * price_per_kwh
+                total_cost_by_month[month] += monthly_cost
+
+        economic_savings = total_cost_by_month[months[0]] - total_cost_by_month[months[1]]
+        return total_cost_by_month, economic_savings
+    except Exception as e:
+        print("Error calculating economic savings:", e)
+        return {}, 0
+
+    

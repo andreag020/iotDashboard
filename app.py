@@ -4,7 +4,6 @@ import logging
 import os
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_DOWN
-
 import pyrebase
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, url_for, jsonify
@@ -220,7 +219,6 @@ def economic_savings():
 def logout():
     logout_user()
     return redirect(url_for('login'))
-
 
 # Route for registering new users
 @app.route('/register', methods=['GET', 'POST'])
