@@ -109,7 +109,7 @@
                 <a href="/devices" class="info-panel">
                     <img src="{{ url_for('static', filename='images/enchufe.png') }}" alt="Devices Icon" class="icon">
                     <div class="info-text">
-                        <h3>Dispositivos</h3>
+                        <h3>Devices</h3>
                         <p>3</p>
                     </div>
                 </a>
@@ -118,7 +118,7 @@
                 <a href="/consumption" class="info-panel">
                     <img src="{{ url_for('static', filename='images/rayo.png') }}" alt="Consumption Icon" class="icon">
                     <div class="info-text">
-                        <h3>Consumo</h3>
+                        <h3>Consumption</h3>
                         <p>{{ total_energy }} kWh</p>
                     </div>
                 </a>
@@ -127,7 +127,7 @@
                 <a href="/emissions" class="info-panel">
                     <img src="{{ url_for('static', filename='images/co2.png') }}" alt="Carbon Icon" class="icon">
                     <div class="info-text">
-                        <h3>Emisiones de Carbono</h3>
+                        <h3>Emisissions CO2</h3>
                         <p>{{total_emissions}} KgCo2</p>
                     </div>
                 </a>
@@ -140,7 +140,7 @@
                         class="icon">
                     <div class="info-text">
                         <h3>Energy Savings</h3>
-                        <p>10%</p>
+                        <p>{{energy_savings}} Kwh</p>
                     </div>
                 </a>
             </div>
@@ -149,15 +149,15 @@
                     <img src="{{ url_for('static', filename='images/monedas.png') }}" alt="Economic Savings Icon"
                         class="icon">
                     <div class="info-text">
-                        <h3>Economic Savings</h3>
-                        <p>$50</p>
+                        <h3>Cost Savings</h3>
+                        <p>${{economic_savings }}</p>
                     </div>
                 </a>
             </div>
         </div>
         <div class="logout-container">
             <form action="{{ url_for('logout') }}" method="POST">
-                <input type="submit" value="Cerrar Sesión" class="btn btn-logout">
+                <input type="submit" value="Logout" class="btn btn-logout">
             </form>
         </div>
     </div>

@@ -1,7 +1,11 @@
 # app_model.py
 
+import locale
 import logging
 import os
+
+from datetime import datetime, timedelta
+
 import firebase_admin
 from firebase_admin import firestore, credentials, auth
 from flask_login import LoginManager, current_user
@@ -9,6 +13,15 @@ from flask_login import UserMixin
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from tuya_connector import TuyaOpenAPI, TUYA_LOGGER
+
+
+# Establecer la localización en español para que los nombres de los meses sean en español
+locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+# Obtener la fecha actual y los meses correspondientes
+today = datetime.today()
+current_month = today.strftime('%B').capitalize()  # Obtener el mes actual en español y capitalizar
+previous_month = (today.replace(day=1) - timedelta(days=1)).strftime(
+    '%B').capitalize()  # Obtener el mes anterior en español y capitalizar
 
 # Fetch the service account key JSON file contents
 cred = credentials.Certificate('model/firebase/iot-dashboard-firebase.json')
@@ -27,13 +40,81 @@ db = firestore.client()
 # Initialize the login manager
 login_manager = LoginManager()
 
+
 class User(UserMixin):
     pass
+
 
 def get_firestore_devices():
     try:
         # Get reference to the "Device" collection
         devices_ref = db.collection('Device')
+
+        # Fetch all documents in the collection
+        devices = devices_ref.stream()
+
+        # List to store device IDs
+        device_ids = []
+
+        # Iterate over each document and get its ID
+        for device in devices:
+            device_id = device.id
+            device_ids.append(device_id)
+
+        return device_ids
+    except Exception as e:
+        print("Error retrieving devices from Firestore:", e)
+        return []
+
+
+def create_user(email, password):
+    user = auth.create_user(email=email, password=password)
+    return user.uid
+
+
+def get_all_users():
+    # Get a reference to the auth service
+    auth = firebase_admin.auth
+
+    # Get the first page of users
+    page = auth.list_users()
+
+    # List to store user IDs
+    user_ids = []
+
+    # Iterate over all users in the page
+    for user in page.iterate_all():
+        user_ids.append(user.uid)
+
+    return user_ids
+
+
+def get_all_types():
+    # Get reference to the "Type" collection
+    types_ref = db.collection('Type')
+
+    # Fetch all documents in the collection
+    types = types_ref.stream()
+
+    # List to store types
+    type_list = [{'id': type_.id, 'name': type_.to_dict()['name']} for type_ in types]
+    return type_list
+
+
+@login_manager.user_loader
+def user_loader(user_id):
+    user = auth.get_user(user_id)
+    if user:
+        user_obj = User()
+        user_obj.id = user.uid
+        return user_obj
+    return None
+
+
+def add_device_to_firestore(device_id, device_info):
+    # Add or update a device in Firestore
+    device_ref = db.collection('Device').document(device_id)
+    device_ref.set(device_info, merge=True)
 
         # Fetch all documents in the collection
         devices = devices_ref.stream()
@@ -144,6 +225,12 @@ def add_device_to_user(user_id, device_name, device_type):
     device_ref = db.collection('Device').document()
     device_ref.set({'name': device_name, 'type': device_type, 'user_id': user_id, 'is_active': False})
 
+def add_device_to_user(user_id, device_name, device_type):
+    # Add a new device for the user in Firestore
+    device_ref = db.collection('Device').document()
+    device_ref.set({'name': device_name, 'type': device_type, 'user_id': user_id, 'is_active': False})
+
+
 def get_devices_for_user(user_id):
     # Get all devices for a specific user
     devices_ref = db.collection('Device')
@@ -151,7 +238,8 @@ def get_devices_for_user(user_id):
     device_list = [{'id': device.id, **device.to_dict()} for device in devices]
     return device_list
 
-#Obtener numero de dispositivos por usuario
+
+# Obtener numero de dispositivos por usuario
 def get_device_count_for_user(user_id):
     try:
         # Get reference to the "Device" collection
@@ -162,6 +250,7 @@ def get_device_count_for_user(user_id):
     except Exception as e:
         print("Error counting devices for user:", e)
         return 0
+
 
 def update_device_status_tuya(device_id, new_status):
     TUYA_LOGGER.setLevel(logging.DEBUG)
@@ -194,34 +283,6 @@ def update_device_status_tuya(device_id, new_status):
         logging.error(f"Failed to get device {device_id} status: {device_status_response}")
         return False
 
-"""def get_device_watts_and_time():
-    try:
-        # Get reference to the "Device" collection
-        devices_ref = db.collection('Device')
-
-        # Fetch all documents in the collection
-        devices = devices_ref.stream()
-
-        # List to store watts and time for each device
-        devices_info = []
-
-        # Iterate over each document and get the required fields
-        for device in devices:
-            device_data = device.to_dict()
-            watts = device_data.get('watts', 0)  # Default to 0 if not found
-            time_array = device_data.get('time', [])  # Default to empty list if not found
-            
-            # Append the info to the list
-            devices_info.append({
-                'id': device.id,
-                'watts': watts,
-                'time': time_array  # Use the time array
-            })
-
-        return devices_info
-    except Exception as e:
-        print("Error retrieving device information from Firestore:", e)
-        return []"""""
 
 def get_device_watts_and_time():
     try:
@@ -245,7 +306,7 @@ def get_device_watts_and_time():
 
             if times:
                 # Navigate to the specific month (e.g., July 2024)
-                time_array = times.get('2024', {}).get('Julio', [])
+                time_array = times.get('2024', {}).get("Julio", [])
 
             # Append the info to the list
             devices_info.append({
@@ -259,21 +320,6 @@ def get_device_watts_and_time():
         print("Error retrieving device information from Firestore:", e)
         return []
 
-# Ejemplo de uso para actualizar los dispositivos
-devices_info = get_device_watts_and_time()
-for device in devices_info:
-    print(f"Device ID: {device['id']}, Watts: {device['watts']}, Time Array: {device['time']}")
-
-###################################################################
-# Function to calculate daily energy consumption
-def calculate_daily_energy(watts, time_array):
-    try:
-        energy_array = [watts * time for time in time_array]  # Energy in watt-hours (Wh) for each day
-        energy_kwh_array = [energy / 1000 for energy in energy_array]  # Convert Wh to kWh
-        return energy_kwh_array
-    except Exception as e:
-        print("Error calculating daily energy consumption:", e)
-        return []
 
 # Función para calcular las emeisiones diariaqs de carbono
 def calculate_daily_co2_emissions(energy_kwh_array, emission_factor=0.5015):
@@ -284,38 +330,49 @@ def calculate_daily_co2_emissions(energy_kwh_array, emission_factor=0.5015):
         print("Error calculating daily CO2 emissions:", e)
         return []
 
-    
-# Function to get the total energy consumption
-def get_total_energy_consumption():
+
+# Function to get the total energy consumption for specific months
+def get_total_energy_consumption(year='2024', months=None):
     try:
-        devices_info = get_device_watts_and_time()
+        # Obtener la información de los dispositivos para los meses y año especificados
+        devices_info = get_device_watts_and_time_for_months(year=year, months=months)
         total_energy = 0
+
+        # Iterar sobre cada dispositivo y calcular el consumo total de energía
         for device in devices_info:
-            daily_energy = calculate_daily_energy(device['watts'], device['time'])
-            total_energy += sum(daily_energy)  # Sum the daily energy to get the total energy for each device
-        total_energy = round(total_energy, 2)  # Round to two decimal places
+            for month in months:
+                daily_energy = calculate_daily_energy(device['watts'], device['times'][month])
+                total_energy += sum(
+                    daily_energy)  # Sumar la energía diaria para obtener el total de energía por dispositivo
+
+        total_energy = round(total_energy, 2)  # Redondear a dos decimales
         return total_energy
     except Exception as e:
         print("Error calculating total energy consumption:", e)
         return 0
 
-def get_total_emission():
+
+def get_total_emission(year='2024', months=None):
     try:
-        devices_info = get_device_watts_and_time()
+        # Obtener la información de los dispositivos para los meses y año especificados
+        devices_info = get_device_watts_and_time_for_months(year=year, months=months)
         total_emissions = 0
+
         for device in devices_info:
-            daily_energy = calculate_daily_energy(device['watts'], device['time'])
+            # Obtener los tiempos del mes especificado
+            time_array = device['times'][months[0]]  # Suponiendo que solo pasas un mes en la lista
+            daily_energy = calculate_daily_energy(device['watts'], time_array)
             daily_emissions = calculate_daily_co2_emissions(daily_energy)
-            total_emissions += sum(daily_emissions)  # Sum the daily emissions to get the total emissions for each device
-        total_emissions = round(total_emissions, 2)  # Round to two decimal places
+            total_emissions += sum(daily_emissions)  # Sumar las emisiones diarias para obtener el total por dispositivo
+
+        total_emissions = round(total_emissions, 2)  # Redondear a dos decimales
         return total_emissions
     except Exception as e:
         print("Error calculating total CO2 emissions:", e)
         return 0
 
 
-
-#Funcion para obtener el tipo de dispositivo por su id
+# Funcion para obtener el tipo de dispositivo por su id
 def get_device_type():
     try:
         # Get reference to the "Device" collection
@@ -331,7 +388,7 @@ def get_device_type():
         for device in devices:
             device_data = device.to_dict()
             type = device_data.get('type')
-            
+
             # Append the info to the list
             devices_info.append({
                 'id': device.id,
@@ -342,10 +399,54 @@ def get_device_type():
     except Exception as e:
         print("Error retrieving device information from Firestore:", e)
         return []
-    
+
+
 ################FUNCIONES TEMPORALES#########
 
-def get_device_watts_and_time_for_months(year='2024', months=['Junio', 'Julio']):
+"""devices_data = [
+    {
+        "Device ID": "03200309dc4f2219bc50",
+        "Time Array": {
+            "2024": {
+                "Junio": [8, 10, 11, 11, 12, 12, 12, 7, 15, 13, 9, 24, 12, 12, 12, 12, 12, 12, 8, 12, 12, 9, 12, 12, 12, 12, 12, 13, 8, 13],
+                "Julio": [8, 1, 8, 8, 8, 2, 8, 7, 6, 9, 9, 9, 8, 4, 9, 4, 9, 9, 4, 9, 5, 9, 4, 8, 8, 4, 8, 8, 9, 3, 8]
+            }
+        }
+    },
+    {
+        "Device ID": "eb4f5e6ca883ad7479mawe",
+        "Time Array": {
+            "2024": {
+                "Junio": [15, 13, 15, 24, 15, 15, 15, 15, 16, 11, 13, 13, 13, 14, 8, 9, 8, 9, 13, 13, 13, 15, 15, 15, 15, 15, 8, 8, 8, 9, 9],
+                "Julio": [8, 1, 8, 7, 7, 7, 7, 7, 8, 8, 9, 8, 7, 7, 7, 8, 8, 7, 8, 7, 8, 7, 7, 8, 7, 8, 7, 6, 8, 6, 8]
+            }
+        }
+    },
+    {
+        "Device ID": "vdevo170000581142241",
+        "Time Array": {
+            "2024": {
+                "Junio": [8, 8, 15, 15, 15, 20, 24, 15, 10, 8, 15, 15, 15, 11, 11, 11, 11, 13, 13, 13, 9, 9, 9, 9, 9, 9, 9, 9, 9, 8],
+                "Julio": [5, 8, 6, 9, 4, 5, 10, 10, 7, 10, 8, 10, 7, 10, 10, 8, 10, 8, 9, 8, 10, 8, 7, 9, 10, 8, 7, 8, 8, 7, 5]
+            }
+        }
+    }
+]
+
+def update_times_only():
+    for device in devices_data:
+        device_id = device['Device ID']
+        device_ref = db.collection('Device').document(device_id)
+
+        # Actualiza solo la variable 'times' para el documento específico
+        update_data = {'times': device['Time Array']}
+        device_ref.update(update_data)
+        print(f"Updated 'times' for device {device_id}.")
+
+update_times_only()"""
+
+
+def get_device_watts_and_time_for_months(year='2024', months=None):
     try:
         devices_ref = db.collection('Device')
         devices = devices_ref.stream()
@@ -356,11 +457,12 @@ def get_device_watts_and_time_for_months(year='2024', months=['Junio', 'Julio'])
             watts = device_data.get('watts', 0)
             times = device_data.get('times', {})
 
-            monthly_times = {month: [] for month in months}
-
-            if times:
-                for month in months:
-                    monthly_times[month] = times.get(year, {}).get(month, [])
+            # Si no se especifican meses, tomar todos los disponibles
+            if not months:
+                available_months = times.get(year, {}).keys()
+                monthly_times = {month: times.get(year, {}).get(month, []) for month in available_months}
+            else:
+                monthly_times = {month: times.get(year, {}).get(month, []) for month in months}
 
             devices_info.append({
                 'id': device.id,
@@ -373,7 +475,20 @@ def get_device_watts_and_time_for_months(year='2024', months=['Junio', 'Julio'])
         print("Error retrieving device information from Firestore:", e)
         return []
 
-def calculate_energy_savings(devices_info, months=['Junio', 'Julio']):
+
+###################################################################
+# Function to calculate daily energy consumption
+def calculate_daily_energy(watts, time_array):
+    try:
+        energy_array = [watts * time for time in time_array]  # Energy in watt-hours (Wh) for each day
+        energy_kwh_array = [energy / 1000 for energy in energy_array]  # Convert Wh to kWh
+        return energy_kwh_array
+    except Exception as e:
+        print("Error calculating daily energy consumption:", e)
+        return []
+
+
+def calculate_energy_savings(devices_info, months=['Month1', 'Month2']):
     try:
         total_energy_by_month = {month: 0 for month in months}
 
@@ -388,12 +503,52 @@ def calculate_energy_savings(devices_info, months=['Junio', 'Julio']):
         print("Error calculating energy savings:", e)
         return {}, 0
 
+
 def calculate_economic_cost(energy_kwh_array, price_per_kwh=0.10):
     try:
         cost_array = [energy_kwh * price_per_kwh for energy_kwh in energy_kwh_array]
         return cost_array
     except Exception as e:
         print("Error calculating economic cost:", e)
+        return []
+
+
+def calculate_economic_savings(devices_info, months=['Junio', 'Julio'], price_per_kwh=0.10):
+    try:
+        total_cost_by_month = {month: 0 for month in months}
+
+        for device in devices_info:
+            for month in months:
+                daily_energy = calculate_daily_energy(device['watts'], device['times'][month])
+                total_energy = sum(daily_energy)
+                monthly_cost = total_energy * price_per_kwh
+                total_cost_by_month[month] += monthly_cost
+
+        economic_savings = total_cost_by_month[months[0]] - total_cost_by_month[months[1]]
+        return total_cost_by_month, economic_savings
+    except Exception as e:
+        print("Error calculating economic savings:", e)
+        return {}, 0
+
+
+# FUNICON PARA OBTENER LOS MESES DISPONIBLES
+def get_available_months(year='2024'):
+    try:
+        devices_ref = db.collection('Device')
+        devices = devices_ref.stream()
+        months_set = set()
+
+        for device in devices:
+            device_data = device.to_dict()
+            times = device_data.get('times', {})
+
+            # Añadir los meses disponibles en el año especificado al conjunto
+            available_months = times.get(year, {}).keys()
+            months_set.update(available_months)
+
+        return sorted(months_set)
+    except Exception as e:
+        print("Error retrieving available months from Firestore:", e)
         return []
 
 def calculate_economic_savings(devices_info, months=['Junio', 'Julio'], price_per_kwh=0.10):

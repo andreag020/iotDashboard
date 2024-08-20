@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CO2 Emissions Data</title>
+    <title>Emissions Data</title>
     <!-- Include Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Include Chart.js for graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <style scoped>
         body {
             background-color: #333333;
@@ -18,80 +19,183 @@
             background-color: #3a3737;
             color: #ffc107;
             border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
         }
 
         .card-header {
             font-size: 1.5em;
             text-align: center;
+            color: #FFFFFF;
+            width: 100%;
         }
 
         .card-body {
             padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            width: 100%;
         }
 
         #emissionsChart {
             width: 100% !important;
-            height: 80vh !important; /* Adjust the height as needed */
+            height: 70vh !important;
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: url('/static/images/home.png') no-repeat center;
+            background-size: cover;
+            width: 50px;
+            height: 50px;
+            border: none;
+        }
+
+        .month-selector {
+            background-color: #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            position: absolute;
+            top: 400px;
+            right: 40px;
+        }
+
+        .month-selector select {
+            margin: 10px 0;
+            background-color: #3a3737;
+            color: #ffc107;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .month-selector label {
+            color: #333333;
+            font-weight: bold;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <h1 class="mb-4 text-warning text-center">CO2 Emissions</h1>
-        <div class="row justify-content-center">
-            <div class="col-md-10"> <!-- Adjusted column width -->
-                <div class="card">
-                    <div class="card-header">
-                        Total CO2 Emissions Data
-                    </div>
-                    <div class="card-body">
-                        <canvas id="emissionsChart"></canvas>
-                    </div>
-                </div>
-            </div>
+<div class="container mt-4">
+    <button onclick="window.location.href='/dashboard'" class="home-button"></button>
+    <h1 class="mb-4 text-warning text-center">Emissions Data</h1>
+    <div class="card">
+        <div class="card-header">
+            CO2 Emissions Chart
+        </div>
+        <div class="card-body">
+            <canvas id="emissionsChart"></canvas>
         </div>
     </div>
+    <div class="month-selector">
+        <form method="get" action="/emissions" id="monthForm">
+            <label for="monthSelect">Select Month:</label>
+            <select name="month" id="monthSelect">
+                <!-- Options will be dynamically populated with available months -->
+            </select>
+        </form>
+    </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const totalCo2EmissionsPerDay = {{ total_co2_emissions_per_day|tojson }};
+<script>
+    let emissionsChart;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var socket = io();
+
+        socket.on('updated_emissions', function (data) {
+            console.log("Received data from WebSocket:", data);  // Debug line
+            const totalCo2EmissionsPerDay = data.total_co2_emissions_per_day;
             const labels = totalCo2EmissionsPerDay.map((_, index) => `Day ${index + 1}`);
 
-            const ctxEmissions = document.getElementById('emissionsChart').getContext('2d');
-            const emissionsChart = new Chart(ctxEmissions, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Total CO2 Emissions (kg CO2)',
-                        data: totalCo2EmissionsPerDay,
-                        backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                        borderColor: 'rgba(255, 193, 7, 1)',
-                        borderWidth: 2,
-                        fill: true
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'kg CO2'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Days'
+            emissionsChart.data.labels = labels;
+            emissionsChart.data.datasets[0].data = totalCo2EmissionsPerDay;
+            emissionsChart.update();
+        });
+
+        const initialEmissions = {{ total_co2_emissions_per_day|tojson }};
+        const initialMonth = '{{ selected_month }}';
+
+        const labels = initialEmissions.map((_, index) => `Day ${index + 1}`);
+
+        const ctxEmissions = document.getElementById('emissionsChart').getContext('2d');
+        emissionsChart = new Chart(ctxEmissions, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Daily CO2 Emissions (kg CO2)',
+                    data: initialEmissions,
+                    backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Emissions [kg CO2]',
+                            color: '#FFFFFF',
+                            font: {
+                                size: 18
                             }
                         }
                     },
-                    maintainAspectRatio: false, // Allow the chart to take up more space
-                    responsive: true // Make the chart responsive
-                }
-            });
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time [Days]',
+                            color: '#FFFFFF',
+                            font: {
+                                size: 18
+                            }
+                        }
+                    }
+                },
+                maintainAspectRatio: false,
+                responsive: true
+            }
         });
-    </script>
+
+        // Población de los selectores de meses
+        const monthOrder = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const availableMonths = {{ available_months|tojson }};
+        const monthSelect = document.getElementById('monthSelect');
+
+        const orderedMonths = monthOrder.filter(month => availableMonths.includes(month));
+        orderedMonths.forEach(month => {
+            const option = document.createElement('option');
+            option.value = month;
+            option.textContent = month;
+            monthSelect.appendChild(option);
+        });
+
+        if (initialMonth) {
+            monthSelect.value = initialMonth;
+        } else {
+            monthSelect.value = orderedMonths[orderedMonths.length - 1];  // Mes actual
+        }
+
+        // Cambiar el mes y actualizar la vista
+        monthSelect.addEventListener('change', function () {
+            document.getElementById('monthForm').submit();
+        });
+    });
+
+</script>
 </body>
 </html>

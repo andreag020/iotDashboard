@@ -9,14 +9,14 @@ $(document).ready(function () {
             var deviceType = device.type;
             var listItem = $(
                 "<div class='device-card'>" +
-                    "<div class='device-info'>" +
-                        "<img src='/static/images/" + deviceType + ".png' alt='" + deviceType + " Icon'>" +
-                        "<span class='device-name'>" + device.customName + "</span>" +
-                    "</div>" +
-                    "<label class='switch'>" +
-                        "<input type='checkbox' class='device-toggle' data-device-id='" + device.id + "' " + checked + ">" +
-                        "<span class='slider'></span>" +
-                    "</label>" +
+                "<div class='device-info'>" +
+                "<img src='/static/images/" + deviceType + ".png' alt='" + deviceType + " Icon'>" +
+                "<span class='device-name'>" + device.customName + "</span>" +
+                "</div>" +
+                "<label class='switch'>" +
+                "<input type='checkbox' class='device-toggle' data-device-id='" + device.id + "' " + checked + ">" +
+                "<span class='slider'></span>" +
+                "</label>" +
                 "</div>"
             );
             deviceList.append(listItem);
@@ -55,5 +55,4 @@ $(document).ready(function () {
         debouncedSendUpdateRequest(deviceId, isActive);
     });
 
-    socket.emit('request_updated_devices');
 });
