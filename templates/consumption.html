@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consumption Data</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Include Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style scoped>
+        body {
+            background-color: #333333;
+            color: #FFFFFF;
+        }
+
+        .card {
+            background-color: #3a3737;
+            color: #ffc107;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .card-header {
+            font-size: 1.5em;
+            text-align: center;
+            color: #FFFFFF;
+            width: 100%;
+        }
+
+        .card-body {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        #consumptionChart {
+            width: 100% !important;
+            height: 70vh !important;
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: url('/static/images/home.png') no-repeat center;
+            background-size: cover;
+            width: 50px;
+            height: 50px;
+            border: none;
+        }
+
+        .month-selector {
+            background-color: #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            position: absolute;
+            top: 400px;
+            right: 40px;
+        }
+
+        .month-selector select {
+            margin: 10px 0;
+            background-color: #3a3737;
+            color: #ffc107;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .month-selector label {
+            color: #333333;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <button onclick="window.location.href='/dashboard'" class="home-button"></button>
+    <h1 class="mb-4 text-warning text-center">Consumption Data</h1>
+    <div class="card">
+        <div class="card-header">
+            Consumption Chart
+        </div>
+        <div class="card-body">
+            <canvas id="consumptionChart"></canvas>
+        </div>
+    </div>
+    <div class="month-selector">
+        <form method="get" action="/consumption" id="monthForm">
+            <label for="monthSelect">Select Month:</label>
+            <select name="month" id="monthSelect">
+                <!-- Options will be dynamically populated with available months -->
+            </select>
+        </form>
+    </div>
+</div>
+
+<script>
+    let consumptionChart;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var socket = io();
+
+        socket.on('updated_consumption', function (data) {
+            console.log("Received data from WebSocket:", data);  // Debug line
+            const devices = data.devices_info;
+            const selectedMonth = "{{ selected_month }}";
+
+            // Actualizar los datos del gráfico
+            const labels = devices.length > 0 ? devices[0].times[selectedMonth].map((_, index) => index + 1) : [];
+            const totalConsumptionPerDay = labels.map((_, dayIndex) => {
+                return devices.reduce((total, device) => {
+                    return total + (device.energy_kwh ? device.energy_kwh[dayIndex] : 0);
+                }, 0);
+            });
+
+            consumptionChart.data.labels = labels;
+            consumptionChart.data.datasets[0].data = totalConsumptionPerDay;
+            consumptionChart.update();
+        });
+
+        const initialDevices = {{ devices_info|tojson }};
+        const initialMonth = '{{ selected_month }}';
+
+        const labels = initialDevices.length > 0 ? initialDevices[0].times[initialMonth].map((_, index) => index + 1) : [];
+        const totalConsumptionPerDay = labels.map((_, dayIndex) => {
+            return initialDevices.reduce((total, device) => {
+                return total + (device.energy_kwh ? device.energy_kwh[dayIndex] : 0);
+            }, 0);
+        });
+
+        const ctxConsumption = document.getElementById('consumptionChart').getContext('2d');
+        consumptionChart = new Chart(ctxConsumption, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Consumption (kWh)',
+                    data: totalConsumptionPerDay,
+                    backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                    borderColor: 'rgba(200, 193, 7, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Consumption [kWh]',
+                            color: '#FFFFFF',
+                            font: {
+                                size: 18
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time [Days]',
+                            color: '#FFFFFF',
+                            font: {
+                                size: 18
+                            }
+                        }
+                    }
+                },
+                maintainAspectRatio: false,
+                responsive: true
+            }
+        });
+
+        // Población de los selectores de meses
+        const monthOrder = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const availableMonths = {{ available_months|tojson }};
+        const monthSelect = document.getElementById('monthSelect');
+
+        const orderedMonths = monthOrder.filter(month => availableMonths.includes(month));
+        orderedMonths.forEach(month => {
+            const option = document.createElement('option');
+            option.value = month;
+            option.textContent = month;
+            monthSelect.appendChild(option);
+        });
+
+        if (initialMonth) {
+            monthSelect.value = initialMonth;
+        } else {
+            monthSelect.value = orderedMonths[orderedMonths.length - 1];  // Mes actual
+        }
+
+        // Cambiar el mes y actualizar la vista
+        monthSelect.addEventListener('change', function () {
+            document.getElementById('monthForm').submit();
+        });
+    });
+
+</script>
+</body>
+</html>

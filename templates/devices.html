@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuya Smart Web App</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
+    <!-- Include Socket.IO library for real-time communication -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <!-- Include jQuery library for easier JavaScript manipulation -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Include the main JavaScript file for this app -->
+    <script src="/static/main.js"></script>
+    <style scoped>
+        body {
+            background-color: #333333;
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+    
+        .container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    
+        .device-list-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px; /* Increased max-width */
+        }
+    
+        .device-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #444444;
+            color: #ffc107;
+            padding: 20px; /* Increased padding */
+            margin: 15px 0; /* Increased margin */
+            border-radius: 8px;
+            width: 100%;
+        }
+    
+        .device-info {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center content horizontally */
+            width: 100%;
+        }
+    
+        .device-info img {
+            width: 50px; /* Increased icon size */
+            height: 50px; /* Increased icon size */
+        }
+    
+        .device-name {
+            font-size: 2em; /* Increased font size */
+            margin-left: 20px; /* Added margin for spacing */
+        }
+    
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px; /* Increased switch size */
+            height: 30px; /* Increased switch size */
+        }
+    
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+    
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+    
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px; /* Increased slider size */
+            width: 22px; /* Increased slider size */
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+    
+        input:checked + .slider {
+            background-color: #ffc107;
+        }
+    
+        input:checked + .slider:before {
+            transform: translateX(20px); /* Adjusted translate for new size */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4 text-warning">Devices</h1>
+        <div class="device-list-container">
+            <div id="device-list" class="list-unstyled w-100">
+                {% for device in devices_db %}
+                    <div class="device-card">
+                        <div class="device-info">
+                            <img src="{{ url_for('static', filename='images/' ~ device.type ~ '.png') }}" alt="{{ device.type }} Icon">
+                            <span class="device-name">{{ device.customName }}</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" class="device-toggle" data-device-id="{{ device.id }}"
+                                   {% if device.status[0].value %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

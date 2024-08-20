@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Savings Data</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Include Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style scoped>
+        body {
+            background-color: #333333;
+            color: #FFFFFF;
+        }
+
+        .card {
+            background-color: #3a3737;
+            color: #ffc107;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .card-header {
+            font-size: 1.5em;
+            text-align: center;
+            color: #FFFFFF;
+            width: 100%;
+        }
+
+        .card-body {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        #energySavingsChart {
+            width: 100% !important;
+            height: 70vh !important; /* Increased height */
+        }
+
+        .savings-info {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.5em; /* Increased font size */
+            color: #FFFFFF; /* White color to match the theme */
+        }
+
+        .positive {
+            color: #23ee52; /* Green for positive savings */
+        }
+
+        .negative {
+            color: #dc3545; /* Red for negative savings */
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: url('/static/images/home.png') no-repeat center;
+            background-size: cover;
+            width: 50px;
+            height: 50px;
+            border: none;
+        }
+
+        .month-selector {
+            background-color: #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            position: absolute;
+            top: 400px;
+            right: 40px;
+        }
+
+        .month-selector select {
+            margin: 10px 0;
+            background-color: #3a3737;
+            color: #ffc107;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .month-selector label {
+            color: #333333;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <button onclick="window.location.href='/dashboard'" class="home-button"></button>
+    <h1 class="mb-4 text-warning text-center">Energy Savings</h1>
+    <div class="card">
+        <div class="card-header">
+            Consumption Comparison Chart
+        </div>
+        <div class="card-body">
+            <canvas id="energySavingsChart"></canvas>
+            <div class="savings-info">
+                <p>Energy savings: <span id="energySavings"></span></p>
+            </div>
+        </div>
+    </div>
+    <div class="month-selector">
+        <form method="get" action="/energy_savings" id="monthForm">
+            <label for="month1">Compare:</label>
+            <select name="month1" id="month1">
+                <!-- Options will be dynamically populated with available months -->
+            </select>
+            <label for="month2">vs:</label>
+            <select name="month2" id="month2">
+                <!-- Options will be dynamically populated with available months -->
+            </select>
+        </form>
+    </div>
+</div>
+<script>
+    let energySavingsChart;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var socket = io();
+
+        socket.on('updated_energy_savings', function (data) {
+            console.log("Received data from WebSocket:", data);  // Debug line
+            const energyData = data.total_energy_by_month;
+            const energySavingsValue = data.energy_savings;
+
+            energySavingsChart.data.labels = Object.keys(energyData);
+            energySavingsChart.data.datasets[0].data = Object.values(energyData);
+            energySavingsChart.update();
+
+            const energySavingsElement = document.getElementById('energySavings');
+            energySavingsElement.textContent = energySavingsValue.toFixed(2) + ' kWh';
+
+            if (energySavingsValue > 0) {
+                energySavingsElement.classList.add('positive');
+                energySavingsElement.classList.remove('negative');
+            } else {
+                energySavingsElement.classList.add('negative');
+                energySavingsElement.classList.remove('positive');
+            }
+        });
+
+        // Lista de meses en orden cronológico
+        const monthOrder = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        const energyData = {{ total_energy_by_month|tojson }};
+        const labels = Object.keys(energyData);
+        const data = Object.values(energyData);
+
+        const ctxEnergySavings = document.getElementById('energySavingsChart').getContext('2d');
+        energySavingsChart = new Chart(ctxEnergySavings, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Energy Consumption (kWh)',
+                    data: data,
+                    backgroundColor: [
+                        'rgba(255, 193, 7, 0.2)',  // Light Yellow
+                        'rgba(128, 0, 128, 0.2)'   // Light Purple
+                    ],
+                    borderColor: [
+                        'rgba(255, 193, 7, 1)',    // Yellow
+                        'rgba(128, 0, 128, 1)'     // Purple
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white', // White labels
+                            font: {
+                                size: 20 // Increased font size
+                            }
+                        }
+                    },
+                    tooltip: {
+                        titleFont: {
+                            size: 20 // Larger font size for title
+                        },
+                        bodyFont: {
+                            size: 18 // Larger font size for body text
+                        },
+                        padding: 20 // Extra padding to make the tooltip larger
+                    }
+                }
+            }
+        });
+
+        const energySavingsElement = document.getElementById('energySavings');
+        const energySavingsValue = {{ energy_savings|tojson }};
+        energySavingsElement.textContent = energySavingsValue.toFixed(2) + ' kWh';
+
+        if (energySavingsValue > 0) {
+            energySavingsElement.classList.add('positive');
+            energySavingsElement.classList.remove('negative');
+        } else {
+            energySavingsElement.classList.add('negative');
+            energySavingsElement.classList.remove('positive');
+        }
+
+        // Populate month options dynamically
+        const availableMonths = {{ available_months|tojson }};
+        const month1Select = document.getElementById('month1');
+        const month2Select = document.getElementById('month2');
+
+        // Ordenar availableMonths según el orden cronológico
+        const orderedMonths = monthOrder.filter(month => availableMonths.includes(month));
+
+        orderedMonths.forEach(month => {
+            const option1 = document.createElement('option');
+            option1.value = month;
+            option1.textContent = month;
+            month1Select.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = month;
+            option2.textContent = month;
+            month2Select.appendChild(option2);
+        });
+
+        // Set default selected months (mes anterior primero)
+        const selectedMonth1 = '{{ month1 }}';
+        const selectedMonth2 = '{{ month2 }}';
+
+        if (selectedMonth1) {
+            month1Select.value = selectedMonth1;
+        } else {
+            month1Select.value = orderedMonths[orderedMonths.length - 2];
+        }
+
+        if (selectedMonth2) {
+            month2Select.value = selectedMonth2;
+        } else {
+            month2Select.value = orderedMonths[orderedMonths.length - 1];
+        }
+
+        // Submit form when both months are selected
+        function submitForm() {
+            if (month1Select.value && month2Select.value) {
+                document.getElementById('monthForm').submit();
+            }
+        }
+
+        month1Select.addEventListener('change', submitForm);
+        month2Select.addEventListener('change', submitForm);
+    });
+</script>
+</body>
+</html>
+
+
+
+

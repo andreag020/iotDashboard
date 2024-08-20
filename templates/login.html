@@ -1,33 +1,130 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <!-- Title of the webpage -->
     <title>Pyrebase-Flask-Login</title>
+    <style>
+      body {
+    background-color: #333333;
+    font-family: 'Arial', sans-serif;
+    color: #ccc;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+#formContent {
+    background: #444444;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    width: 350px;
+    animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+input[type="email"],
+input[type="password"],
+input[type="submit"],
+button {
+    display: block;
+    width: calc(100% - 20px);
+    margin: 15px auto;
+    padding: 15px;
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+input[type="email"],
+input[type="password"] {
+    background-color: #555555;
+    color: #ffc107;
+    border: 1px solid #777777;
+}
+
+input[type="submit"],
+button {
+    background-color: #ffc107;
+    color: #333333;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+input[type="submit"]:hover,
+button:hover {
+    background-color: #e0a800;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+input[type="email"]:focus,
+input[type="password"]:focus {
+    border: 1px solid #ffc107;
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+}
+
+.flashes {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0;
+    text-align: left;
+}
+
+.flashes li {
+    background-color: #555555;
+    padding: 10px;
+    border-radius: 5px;
+    color: #ffc107;
+    margin-bottom: 10px;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.fadeIn {
+    animation: fadeIn 2s ease-in-out;
+}
+
+.fadeIn.second {
+    animation-delay: 0.5s;
+}
+
+.fadeIn.third {
+    animation-delay: 1s;
+}
+
+.fadeIn.fourth {
+    animation-delay: 1.5s;
+}
+    </style>
 </head>
 <body>
-<!-- Wrapper div for the content with a fade-in effect -->
 <div class="wrapper fadeInDown">
-    <!-- Form content div -->
     <div id="formContent">
-        <!-- Login form -->
         <form action="{{ url_for('login') }}" method="POST">
-            <!-- Email input field -->
             <input type="email" id="login" class="fadeIn second" name="email" placeholder="email" autocomplete="email">
-            <!-- Password input field -->
-            <input type="password" id="password" class="fadeIn third" name="password" placeholder="password"
-                   autocomplete="current-password">
-            <!-- Submit button for login -->
+            <input type="password" id="password" class="fadeIn third" name="password" placeholder="password" autocomplete="current-password">
             <input type="submit" class="fadeIn fourth" value="Log In">
         </form>
-        <!-- Form to navigate to the registration page -->
         <form action="{{ url_for('register') }}" method="GET">
-            <!-- Register button -->
             <button type="submit">Register</button>
         </form>
-        <!-- Displaying flashed messages if any -->
         {% with messages = get_flashed_messages() %}
             {% if messages %}
-                <!-- List of flashed messages -->
                 <ul class=flashes>
                     {% for message in messages %}
                         <li>{{ message }}</li>
