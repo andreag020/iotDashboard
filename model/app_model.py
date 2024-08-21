@@ -401,51 +401,6 @@ def get_device_type():
         return []
 
 
-################FUNCIONES TEMPORALES#########
-
-"""devices_data = [
-    {
-        "Device ID": "03200309dc4f2219bc50",
-        "Time Array": {
-            "2024": {
-                "Junio": [8, 10, 11, 11, 12, 12, 12, 7, 15, 13, 9, 24, 12, 12, 12, 12, 12, 12, 8, 12, 12, 9, 12, 12, 12, 12, 12, 13, 8, 13],
-                "Julio": [8, 1, 8, 8, 8, 2, 8, 7, 6, 9, 9, 9, 8, 4, 9, 4, 9, 9, 4, 9, 5, 9, 4, 8, 8, 4, 8, 8, 9, 3, 8]
-            }
-        }
-    },
-    {
-        "Device ID": "eb4f5e6ca883ad7479mawe",
-        "Time Array": {
-            "2024": {
-                "Junio": [15, 13, 15, 24, 15, 15, 15, 15, 16, 11, 13, 13, 13, 14, 8, 9, 8, 9, 13, 13, 13, 15, 15, 15, 15, 15, 8, 8, 8, 9, 9],
-                "Julio": [8, 1, 8, 7, 7, 7, 7, 7, 8, 8, 9, 8, 7, 7, 7, 8, 8, 7, 8, 7, 8, 7, 7, 8, 7, 8, 7, 6, 8, 6, 8]
-            }
-        }
-    },
-    {
-        "Device ID": "vdevo170000581142241",
-        "Time Array": {
-            "2024": {
-                "Junio": [8, 8, 15, 15, 15, 20, 24, 15, 10, 8, 15, 15, 15, 11, 11, 11, 11, 13, 13, 13, 9, 9, 9, 9, 9, 9, 9, 9, 9, 8],
-                "Julio": [5, 8, 6, 9, 4, 5, 10, 10, 7, 10, 8, 10, 7, 10, 10, 8, 10, 8, 9, 8, 10, 8, 7, 9, 10, 8, 7, 8, 8, 7, 5]
-            }
-        }
-    }
-]
-
-def update_times_only():
-    for device in devices_data:
-        device_id = device['Device ID']
-        device_ref = db.collection('Device').document(device_id)
-
-        # Actualiza solo la variable 'times' para el documento específico
-        update_data = {'times': device['Time Array']}
-        device_ref.update(update_data)
-        print(f"Updated 'times' for device {device_id}.")
-
-update_times_only()"""
-
-
 def get_device_watts_and_time_for_months(year='2024', months=None):
     try:
         devices_ref = db.collection('Device')
